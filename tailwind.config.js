@@ -4,8 +4,9 @@ export default {
   theme: {
     extend: {
       colors: {
-        navy: { DEFAULT: '#102A43', 900: '#0B1E31', 800: '#102A43', 700: '#1E3A5F', 600: '#334E68' },
-        royal: '#2563EB',
+        ink: '#334155',
+        navy: { DEFAULT: '#102A43', 900: '#0B1F33', 800: '#102A43', 700: '#1E3A5F', 600: '#334E68' },
+        royal: '#1D4ED8',
         cyan: { DEFAULT: '#38BDF8' },
         emerald: { DEFAULT: '#10B981' },
         canvas: '#F8FAFC',

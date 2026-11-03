@@ -1,24 +1,29 @@
-import { useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion, useInView, useReducedMotion } from 'framer-motion'
 import {
-  ArrowUpRight, BadgeCheck, Building2, CalendarDays, ChevronDown, FileSearch, FileText, Fingerprint, Home as HomeIcon,
-  MapPin, QrCode, ScanLine, ShieldCheck, Timer, UserCheck,
+  AlertTriangle, ArrowRight, ArrowUpRight, Baby, BadgeCheck, Bell, Building2, CalendarCheck2, ChevronDown, ChevronLeft, ChevronRight,
+  ClipboardList, ExternalLink, FileSearch, FileText, Fingerprint, HeartPulse, Home as HomeIcon, Landmark, Lock, MapPin, Megaphone,
+  MessageCircleQuestion, MonitorSmartphone, Navigation, Phone, QrCode, ScrollText, Search, ShieldAlert, ShieldCheck, Siren, UserRound,
+  Users, type LucideIcon,
 } from 'lucide-react'
-import Hero from '../components/Hero'
+import HeroSlider from '../components/HeroSlider'
 import Marquee from '../components/Marquee'
 import Reveal from '../components/Reveal'
 import DemoBadge from '../components/DemoBadge'
-import { SERVICES, STATIONS, nextWorkingDays, slotsFor } from '../lib/store'
+import { pick, useLang, useT, type Lang } from '../lib/i18n'
+import { STATIONS } from '../lib/store'
 
-const Dot = () => <span className="inline-block h-1.5 w-1.5 rounded-full bg-cyan" />
+type L3 = { en: string; mr: string; hi: string }
 
-function SectionHead({ eyebrow, title, sub, center = false }: { eyebrow: string; title: string; sub?: string; center?: boolean }) {
+function SectionHead({ eyebrow, title, sub, center = false, light = false }: { eyebrow: string; title: string; sub?: string; center?: boolean; light?: boolean }) {
   return (
     <Reveal className={center ? 'mx-auto max-w-2xl text-center' : 'max-w-2xl'}>
-      <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-royal">{eyebrow}</p>
-      <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-navy sm:text-4xl lg:text-5xl">{title}</h2>
-      {sub && <p className="mt-4 text-base leading-relaxed text-navy-600 sm:text-lg">{sub}</p>}
+      <p className={`flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.22em] ${light ? 'text-cyan' : 'text-royal'} ${center ? 'justify-center' : ''}`}>
+        <span className="h-px w-6 bg-current" /> {eyebrow}
+      </p>
+      <h2 className={`mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl lg:text-[2.9rem] lg:leading-[1.08] ${light ? 'text-white' : 'text-navy'}`}>{title}</h2>
+      {sub && <p className={`mt-4 text-base leading-relaxed sm:text-lg ${light ? 'text-slate-300' : 'text-ink'}`}>{sub}</p>}
     </Reveal>
   )
 }
@@ -26,95 +31,181 @@ function SectionHead({ eyebrow, title, sub, center = false }: { eyebrow: string;
 export default function Home() {
   return (
     <>
-      <Hero />
+      <HeroSlider />
 
-      {/* MARQUEE 01 – digital services */}
-      <section aria-label="Digital services" className="bg-navy py-5 sm:py-6">
+      <section aria-label="Values" className="bg-navy py-4 sm:py-5">
         <Marquee
-          items={['STRATEGY', 'SECURITY', 'VERIFICATION', 'TRANSPARENCY', 'DIGITAL GOVERNANCE']}
-          direction="left"
-          duration={30}
-          repeat={3}
-          separator={<span className="text-cyan">•</span>}
-          itemClassName="text-xl font-extrabold tracking-tight text-white sm:text-3xl"
-        />
-      </section>
-
-      <HowItWorks />
-
-      {/* MARQUEE 03 – process */}
-      <section aria-label="Verification process" className="border-y border-slate-200 bg-white py-6 sm:py-8">
-        <Marquee
-          items={['BOOK', 'PREPARE', 'ARRIVE', 'SCAN', 'VERIFY', 'COMPLETE']}
-          direction="left"
-          duration={26}
-          repeat={3}
-          gap="2rem"
-          separator={<span className="text-royal/40">→</span>}
-          itemClassName="text-3xl font-extrabold tracking-tight text-transparent [-webkit-text-stroke:1.5px_#102A43] transition-colors hover:text-navy sm:text-5xl"
-        />
-      </section>
-
-      <Services />
-
-      {/* MARQUEE 02 – citizen experience (opposite direction) */}
-      <section aria-label="Citizen experience" className="bg-gradient-to-r from-royal to-[#1d4ed8] py-5 sm:py-6">
-        <Marquee
-          items={['FASTER SERVICES', 'LESS WAITING', 'BETTER MANAGEMENT', 'CITIZEN FIRST']}
-          direction="right"
-          duration={34}
-          repeat={3}
-          separator={<Dot />}
-          itemClassName="text-lg font-bold tracking-[0.12em] text-white sm:text-2xl"
-        />
-      </section>
-
-      <Readiness />
-      <Stations />
-
-      {/* MARQUEE 04 – oversized transition */}
-      <section aria-label="Your time matters" className="overflow-hidden bg-canvas py-10 sm:py-16">
-        <Marquee
-          items={['YOUR TIME MATTERS.', 'YOUR SERVICE SHOULD TOO.']}
-          direction="left"
-          duration={50}
+          items={['TRUST', 'SERVICE', 'SECURITY', 'TRANSPARENCY', 'CITIZEN FIRST', 'SMART GOVERNANCE']}
+          duration={36}
           repeat={2}
-          gap="3rem"
-          pauseOnHover={false}
-          separator={<ShieldCheck className="h-10 w-10 text-cyan sm:h-16 sm:w-16 lg:h-20 lg:w-20" strokeWidth={1.5} />}
-          itemClassName="whitespace-nowrap text-[3.25rem] font-extrabold leading-none tracking-[-0.04em] text-navy sm:text-[6rem] lg:text-[9rem]"
+          separator={<span className="text-cyan">•</span>}
+          itemClassName="text-lg font-extrabold tracking-[0.08em] text-white sm:text-2xl"
+        />
+      </section>
+      <section aria-label="Steps" className="border-b border-slate-200 bg-white py-3.5 sm:py-4">
+        <Marquee
+          items={['BOOK YOUR SLOT', 'PREPARE YOUR DOCUMENTS', 'ARRIVE ON TIME', 'COMPLETE VERIFICATION']}
+          direction="right"
+          duration={44}
+          repeat={2}
+          separator={<ArrowRight className="h-4 w-4 text-royal" />}
+          itemClassName="text-sm font-bold tracking-[0.18em] text-navy-600 sm:text-base"
         />
       </section>
 
-      <WhyVerification />
+      <QuickServices />
+      <Journey />
+      <Helplines />
+      <Stations />
+      <News />
+      <Institution />
+      <Explainer />
       <Faq />
       <CtaBand />
     </>
   )
 }
 
-/* ---------------- How it works ---------------- */
-function HowItWorks() {
-  const steps = [
-    { icon: CalendarDays, title: 'Book a slot', text: 'Choose your service, station and a 15-minute slot that still has room.' },
-    { icon: FileSearch, title: 'Prepare documents', text: 'See exactly what to bring and check your details before you leave home.' },
-    { icon: QrCode, title: 'Arrive with your pass', text: 'Show your digital pass. Its QR holds only a random, expiring token.' },
-    { icon: BadgeCheck, title: 'Complete verification', text: 'The officer completes the verification. Track the status online.' },
+/* ---------------- Quick citizen services ---------------- */
+type Svc = { icon: LucideIcon; t: L3; d: L3; to: string; external?: boolean }
+const SERVICES: Svc[] = [
+  { icon: Fingerprint, to: '/book?service=passport', t: { en: 'Passport Verification', mr: 'पासपोर्ट पडताळणी', hi: 'पासपोर्ट सत्यापन' }, d: { en: 'Book your verification slot at the Commissionerate.', mr: 'आयुक्तालयात पडताळणीची वेळ घ्या.', hi: 'आयुक्तालय में सत्यापन स्लॉट बुक करें.' } },
+  { icon: ScrollText, to: 'https://www.passportindia.gov.in/', external: true, t: { en: 'Police Clearance', mr: 'पोलीस क्लिअरन्स', hi: 'पुलिस क्लीयरेंस' }, d: { en: 'Apply for a Police Clearance Certificate through Passport Seva.', mr: 'पासपोर्ट सेवेद्वारे पोलीस क्लिअरन्स प्रमाणपत्रासाठी अर्ज करा.', hi: 'पासपोर्ट सेवा के ज़रिए PCC के लिए आवेदन करें.' } },
+  { icon: Megaphone, to: 'https://citizen.mahapolice.gov.in/', external: true, t: { en: 'Citizen Complaints', mr: 'नागरिक तक्रार', hi: 'नागरिक शिकायत' }, d: { en: 'Register a complaint on the Maharashtra Police citizen portal.', mr: 'महाराष्ट्र पोलीस नागरिक पोर्टलवर तक्रार नोंदवा.', hi: 'महाराष्ट्र पुलिस नागरिक पोर्टल पर शिकायत दर्ज करें.' } },
+  { icon: FileText, to: 'https://citizen.mahapolice.gov.in/', external: true, t: { en: 'Online FIR Information', mr: 'ऑनलाइन एफआयआर माहिती', hi: 'ऑनलाइन एफआईआर जानकारी' }, d: { en: 'View FIR and related services on the official citizen portal.', mr: 'अधिकृत नागरिक पोर्टलवर एफआयआर सेवा पहा.', hi: 'आधिकारिक नागरिक पोर्टल पर एफआईआर सेवाएँ देखें.' } },
+  { icon: MonitorSmartphone, to: 'https://cybercrime.gov.in/', external: true, t: { en: 'Cybercrime Assistance', mr: 'सायबर गुन्हे सहाय्य', hi: 'साइबर अपराध सहायता' }, d: { en: 'Report online fraud. For money lost, call 1930 immediately.', mr: 'ऑनलाइन फसवणूक नोंदवा. पैसे गेल्यास त्वरित 1930 वर कॉल करा.', hi: 'ऑनलाइन धोखाधड़ी रिपोर्ट करें. पैसे गए हों तो तुरंत 1930 पर कॉल करें.' } },
+  { icon: Building2, to: '/#stations', t: { en: 'Police Station Directory', mr: 'पोलीस ठाणे निर्देशिका', hi: 'पुलिस थाना निर्देशिका' }, d: { en: 'Find stations by area and open directions.', mr: 'परिसरानुसार ठाणी शोधा आणि मार्ग पहा.', hi: 'क्षेत्र से थाने खोजें और रास्ता देखें.' } },
+  { icon: CalendarCheck2, to: '/book', t: { en: 'Appointment Booking', mr: 'भेट नोंदणी', hi: 'अपॉइंटमेंट बुकिंग' }, d: { en: 'Pick a 15-minute slot with live capacity.', mr: 'उपलब्ध जागांसह १५ मिनिटांची वेळ निवडा.', hi: 'उपलब्ध क्षमता के साथ 15 मिनट का स्लॉट चुनें.' } },
+  { icon: Search, to: '/track', t: { en: 'Application Tracking', mr: 'अर्जाचा मागोवा', hi: 'आवेदन ट्रैकिंग' }, d: { en: 'Check status, view your pass or cancel.', mr: 'स्थिती तपासा, पास पहा किंवा रद्द करा.', hi: 'स्थिति देखें, पास देखें या रद्द करें.' } },
+]
+
+function QuickServices() {
+  const t = useT()
+  const { lang } = useLang()
+  return (
+    <section id="services" className="scroll-mt-24 bg-canvas py-20 sm:py-24">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <SectionHead eyebrow={t('svc.eyebrow')} title={t('svc.title')} sub={t('svc.sub')} />
+        <div className="mt-12 grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 lg:grid-cols-4">
+          {SERVICES.map((s, i) => {
+            const inner = (
+              <>
+                <div className="flex items-start justify-between gap-3">
+                  <span className={`grid h-12 w-12 place-items-center rounded-2xl transition-colors duration-300 ${s.external ? 'bg-slate-100 text-navy group-hover:bg-navy group-hover:text-white' : 'bg-royal/10 text-royal group-hover:bg-royal group-hover:text-white'}`}>
+                    <s.icon className="h-6 w-6" />
+                  </span>
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${s.external ? 'bg-slate-100 text-slate-600' : 'bg-royal/10 text-royal'}`}>
+                    {s.external ? t('svc.official') : t('svc.pf')}
+                  </span>
+                </div>
+                <h3 className="mt-5 text-[17px] font-extrabold text-navy">{pick(lang, s.t)}</h3>
+                <p className="mt-1.5 flex-1 text-sm leading-relaxed text-ink">{pick(lang, s.d)}</p>
+                <span className="mt-5 flex items-center gap-1.5 text-sm font-bold text-royal">
+                  {s.external ? <>Open <ExternalLink className="h-3.5 w-3.5" /></> : <>Continue <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" /></>}
+                </span>
+              </>
+            )
+            const cls = 'group relative flex h-full flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-card transition duration-300 hover:-translate-y-1 hover:border-royal/30 hover:shadow-lift sm:p-6'
+            return (
+              <Reveal key={s.to + i} delay={(i % 4) * 0.06}>
+                {s.external ? (
+                  <a href={s.to} target="_blank" rel="noreferrer" className={cls}>{inner}</a>
+                ) : (
+                  <Link to={s.to} className={cls}>{inner}</Link>
+                )}
+              </Reveal>
+            )
+          })}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/* ---------------- Journey ---------------- */
+const STEPS: { icon: LucideIcon; t: L3; d: L3 }[] = [
+  { icon: CalendarCheck2, t: { en: 'Book', mr: 'नोंदणी', hi: 'बुक करें' }, d: { en: 'Select your verification category, location and an available appointment slot.', mr: 'पडताळणीचा प्रकार, ठिकाण आणि उपलब्ध वेळ निवडा.', hi: 'सत्यापन श्रेणी, स्थान और उपलब्ध स्लॉट चुनें.' } },
+  { icon: FileSearch, t: { en: 'Prepare', mr: 'तयारी', hi: 'तैयारी' }, d: { en: 'Upload documents and complete preliminary readiness checks.', mr: 'कागदपत्रे अपलोड करा आणि प्राथमिक तयारी तपासणी पूर्ण करा.', hi: 'दस्तावेज़ अपलोड करें और प्रारंभिक तैयारी जाँच पूरी करें.' } },
+  { icon: QrCode, t: { en: 'Arrive', mr: 'उपस्थित राहा', hi: 'पहुँचें' }, d: { en: 'Bring your verification pass and report at your allocated time.', mr: 'पडताळणी पास घेऊन ठरलेल्या वेळी हजर राहा.', hi: 'सत्यापन पास लेकर तय समय पर पहुँचें.' } },
+  { icon: BadgeCheck, t: { en: 'Verify', mr: 'पडताळणी', hi: 'सत्यापन' }, d: { en: "Present your QR code and complete the authorised officer's verification process.", mr: 'QR कोड दाखवा आणि अधिकृत अधिकाऱ्याची पडताळणी प्रक्रिया पूर्ण करा.', hi: 'QR कोड दिखाएँ और अधिकृत अधिकारी की सत्यापन प्रक्रिया पूरी करें.' } },
+]
+
+function Journey() {
+  const t = useT()
+  const { lang } = useLang()
+  const ref = useRef<HTMLOListElement>(null)
+  const inView = useInView(ref, { once: true, margin: '-100px' })
+  const reduce = useReducedMotion()
+  return (
+    <section id="journey" className="relative scroll-mt-24 overflow-hidden bg-white py-20 sm:py-28">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <SectionHead eyebrow={t('jr.eyebrow')} title={t('jr.title')} center />
+        <ol ref={ref} className="relative mt-14 grid gap-6 md:grid-cols-4 md:gap-5">
+          {/* horizontal line (desktop) */}
+          <div aria-hidden className="absolute left-[12.5%] right-[12.5%] top-8 hidden h-[3px] rounded-full bg-slate-200 md:block">
+            <motion.div className="journey-line h-full rounded-full bg-gradient-to-r from-royal via-cyan to-emerald" initial={{ scaleX: reduce ? 1 : 0 }} animate={{ scaleX: inView ? 1 : 0 }} transition={{ duration: 1.8, ease: [0.4, 0, 0.2, 1] }} />
+          </div>
+          {/* vertical line (mobile) */}
+          <div aria-hidden className="absolute bottom-8 left-8 top-8 w-[3px] rounded-full bg-slate-200 md:hidden">
+            <motion.div className="h-full w-full origin-top rounded-full bg-gradient-to-b from-royal via-cyan to-emerald" initial={{ scaleY: reduce ? 1 : 0 }} animate={{ scaleY: inView ? 1 : 0 }} transition={{ duration: 1.8, ease: [0.4, 0, 0.2, 1] }} />
+          </div>
+          {STEPS.map((s, i) => (
+            <motion.li
+              key={s.t.en}
+              initial={reduce ? false : { opacity: 0, y: 24 }}
+              animate={inView ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.6, delay: 0.25 + i * 0.35 }}
+              className="relative flex gap-5 md:flex-col md:items-center md:text-center"
+            >
+              <span className="relative z-10 grid h-16 w-16 shrink-0 place-items-center rounded-2xl border-4 border-white bg-navy text-cyan shadow-lift">
+                <s.icon className="h-7 w-7" />
+              </span>
+              <div className="pt-1 md:pt-0">
+                <p className="text-xs font-extrabold tracking-[0.2em] text-royal">0{i + 1}</p>
+                <h3 className="mt-1 text-xl font-extrabold uppercase tracking-wide text-navy">{pick(lang, s.t)}</h3>
+                <p className="mt-2 max-w-xs text-sm leading-relaxed text-ink">{pick(lang, s.d)}</p>
+              </div>
+            </motion.li>
+          ))}
+        </ol>
+        <Reveal className="mt-12 text-center">
+          <Link to="/book" className="inline-flex items-center gap-2 rounded-xl bg-navy px-6 py-3.5 font-bold text-white transition hover:bg-royal">
+            {t('nav.book')} <ArrowRight className="h-4 w-4" />
+          </Link>
+        </Reveal>
+      </div>
+    </section>
+  )
+}
+
+/* ---------------- Helplines ---------------- */
+function Helplines() {
+  const t = useT()
+  const lines: { n: string; l: string; icon: LucideIcon }[] = [
+    { n: '112', l: 'Emergency', icon: Siren },
+    { n: '1091', l: 'Women helpline', icon: UserRound },
+    { n: '1098', l: 'Childline', icon: Baby },
+    { n: '14567', l: 'Senior citizens', icon: Users },
+    { n: '1930', l: 'Cybercrime', icon: ShieldAlert },
+    { n: '108', l: 'Ambulance', icon: HeartPulse },
   ]
   return (
-    <section id="how-it-works" className="scroll-mt-20 py-20 sm:py-28">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <SectionHead eyebrow="How it works" title="Four steps. No guesswork." sub="A clear path from booking to completion, so you know what happens next at every stage." />
-        <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
-          {steps.map((s, i) => (
-            <Reveal key={s.title} delay={i * 0.08}>
-              <div className="group relative h-full overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-card transition duration-300 hover:-translate-y-1 hover:shadow-lift">
-                <span className="absolute right-5 top-4 text-5xl font-extrabold text-slate-100 transition-colors group-hover:text-cyan/20">0{i + 1}</span>
-                <span className="grid h-12 w-12 place-items-center rounded-2xl bg-navy text-cyan">
-                  <s.icon className="h-6 w-6" />
-                </span>
-                <h3 className="mt-5 text-lg font-extrabold text-navy">{s.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-navy-600">{s.text}</p>
+    <section className="relative overflow-hidden bg-navy py-20 text-white sm:py-24">
+      <div aria-hidden className="absolute -right-40 -top-40 h-[30rem] w-[30rem] rounded-full bg-royal/40 blur-3xl" />
+      <div aria-hidden className="absolute -bottom-40 -left-20 h-[24rem] w-[24rem] rounded-full bg-cyan/20 blur-3xl" />
+      <div className="relative mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 lg:grid-cols-[0.8fr_1.2fr] lg:items-center lg:px-8">
+        <SectionHead eyebrow="24×7" title={t('help.title')} sub={t('help.sub')} light />
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {lines.map((x, i) => (
+            <Reveal key={x.n} delay={i * 0.05}>
+              <div className="h-full">
+                <a href={`tel:${x.n}`} className="group flex h-full flex-col rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur transition hover:-translate-y-0.5 hover:border-cyan/50 hover:bg-white/10 sm:p-5">
+                  <x.icon className="h-5 w-5 text-cyan" />
+                  <span className="mt-3 text-3xl font-extrabold tracking-tight tabular-nums sm:text-4xl">{x.n}</span>
+                  <span className="mt-1 flex items-center justify-between text-sm font-semibold text-slate-300">
+                    {x.l} <Phone className="h-3.5 w-3.5 opacity-0 transition group-hover:opacity-100" />
+                  </span>
+                </a>
               </div>
             </Reveal>
           ))}
@@ -124,168 +215,254 @@ function HowItWorks() {
   )
 }
 
-/* ---------------- Services ---------------- */
-function Services() {
-  const icons = [Fingerprint, HomeIcon, UserCheck]
+/* ---------------- Station directory ---------------- */
+const DIRECTORY = [
+  'APMC', 'CBD Belapur', 'Kalamboli', 'Kamothe', 'Kharghar', 'Nerul', 'Panvel', 'Taloja', 'Turbhe', 'Vashi', 'Uran',
+]
+
+function Stations() {
+  const t = useT()
+  const [q, setQ] = useState('')
+  const verify = STATIONS[0]
+  const list = useMemo(() => DIRECTORY.filter((n) => n.toLowerCase().includes(q.trim().toLowerCase())), [q])
+  const maps = (name: string) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name + ' Navi Mumbai')}`
+
   return (
-    <section id="services" className="scroll-mt-20 py-20 sm:py-28">
+    <section id="stations" className="scroll-mt-24 bg-canvas py-20 sm:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
-          <SectionHead eyebrow="Services" title="Verification services" sub="Available services depend on each station's authorisation." />
-          <Reveal>
-            <Link to="/book" className="inline-flex items-center gap-1.5 font-bold text-royal link-underline">
-              Start a booking <ArrowUpRight className="h-4 w-4" />
-            </Link>
+        <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+          <SectionHead eyebrow={t('st.eyebrow')} title={t('st.title')} />
+          <Reveal className="w-full lg:max-w-sm">
+            <label className="relative block">
+              <span className="sr-only">{t('st.search')}</span>
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('st.search')} className="w-full rounded-2xl border border-slate-200 bg-white py-4 pl-12 pr-4 font-semibold outline-none transition focus:border-royal focus:ring-4 focus:ring-royal/10" />
+            </label>
           </Reveal>
         </div>
-        <div className="mt-12 grid gap-5 md:grid-cols-3">
-          {SERVICES.map((s, i) => {
-            const Icon = icons[i]
-            return (
-              <Reveal key={s.id} delay={i * 0.08}>
-                <Link
-                  to={`/book?service=${s.id}`}
-                  className="group flex h-full flex-col rounded-3xl border border-slate-200 bg-white p-7 shadow-card transition duration-300 hover:-translate-y-1 hover:border-royal/30 hover:shadow-lift"
-                >
-                  <span className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-royal to-cyan text-white">
-                    <Icon className="h-6 w-6" />
-                  </span>
-                  <h3 className="mt-5 text-xl font-extrabold text-navy">{s.name}</h3>
-                  <p className="mt-2 flex-1 text-sm leading-relaxed text-navy-600">{s.desc}</p>
-                  <span className="mt-6 inline-flex items-center gap-1 text-sm font-bold text-royal">
-                    Book this service <ArrowUpRight className="h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-                  </span>
-                </Link>
-              </Reveal>
-            )
-          })}
-        </div>
-      </div>
-    </section>
-  )
-}
 
-/* ---------------- Readiness ---------------- */
-function Readiness() {
-  const items = [
-    { label: 'Identity document', state: 'Submitted', ok: true },
-    { label: 'Address proof', state: 'Submitted', ok: true },
-    { label: 'Application reference', state: 'Matches entered details', ok: true },
-    { label: 'Supporting document', state: 'Pending', ok: false },
-  ]
-  return (
-    <section className="relative overflow-hidden bg-navy py-20 text-white sm:py-28">
-      <div aria-hidden className="absolute -right-40 -top-40 h-[30rem] w-[30rem] rounded-full bg-cyan/20 blur-3xl" />
-      <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-4 sm:px-6 md:grid-cols-2 lg:px-8">
-        <Reveal>
-          <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-cyan">Pre-arrival readiness</p>
-          <h2 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl lg:text-5xl">Arrive prepared, not uncertain.</h2>
-          <p className="mt-4 text-base leading-relaxed text-slate-300 sm:text-lg">
-            The readiness score shows how complete your paperwork is before your visit. It is a preparation aid only. It is not
-            identity authentication, an approval or a final police decision, and nobody is rejected automatically.
-          </p>
-        </Reveal>
-        <Reveal delay={0.1}>
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur sm:p-8">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-bold text-slate-300">Document readiness</p>
-              <DemoBadge />
+        {/* verification location */}
+        <Reveal className="mt-10">
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-navy to-royal p-6 text-white shadow-lift sm:p-8">
+            <div aria-hidden className="absolute -right-10 -top-10 h-48 w-48 rounded-full bg-cyan/25 blur-2xl" />
+            <div className="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+              <div>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald/20 px-3 py-1 text-xs font-bold text-emerald-200">
+                  <BadgeCheck className="h-3.5 w-3.5" /> PoliceFlow verification location
+                </span>
+                <h3 className="mt-3 text-2xl font-extrabold sm:text-3xl">{verify.name}</h3>
+                <p className="mt-1 flex items-center gap-1.5 text-slate-200"><MapPin className="h-4 w-4" /> {verify.area}</p>
+                <p className="mt-2 text-sm text-slate-300">Passport, tenant and character verification appointments.</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3 md:w-72 md:grid-cols-1">
+                <Link to="/book" className="flex items-center justify-center gap-2 rounded-xl bg-white py-3 font-bold text-navy">
+                  <CalendarCheck2 className="h-4 w-4" /> Book a slot
+                </Link>
+                <a href={maps('Commissioner of Police Office CBD Belapur')} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 rounded-xl border border-white/30 py-3 font-bold">
+                  <Navigation className="h-4 w-4" /> Directions
+                </a>
+              </div>
             </div>
-            <p className="mt-2 text-5xl font-extrabold">85%</p>
-            <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
-              <motion.div className="h-full rounded-full bg-gradient-to-r from-royal to-cyan" initial={{ width: 0 }} whileInView={{ width: '85%' }} viewport={{ once: true }} transition={{ duration: 1.4, ease: 'easeOut' }} />
-            </div>
-            <ul className="mt-6 space-y-3">
-              {items.map((it) => (
-                <li key={it.label} className="flex items-center justify-between gap-4 rounded-2xl bg-white/5 px-4 py-3 text-sm">
-                  <span className="flex items-center gap-2.5 font-semibold">
-                    <FileText className="h-4 w-4 text-cyan" /> {it.label}
-                  </span>
-                  <span className={`text-xs font-bold ${it.ok ? 'text-emerald' : 'text-amber-300'}`}>{it.state}</span>
-                </li>
-              ))}
-            </ul>
           </div>
         </Reveal>
-      </div>
-    </section>
-  )
-}
 
-/* ---------------- Stations ---------------- */
-function Stations() {
-  const date = nextWorkingDays(1)[0]
-  return (
-    <section id="stations" className="scroll-mt-20 py-20 sm:py-28">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <SectionHead eyebrow="Verification location" title="Appointment availability" sub="All verifications take place at one office. Open slots shown are for the next working day and are simulated." />
-        <div className="mx-auto mt-12 grid max-w-xl gap-5">
-          {STATIONS.map((st, i) => {
-            const slots = slotsFor(st.id, date)
-            const open = slots.filter((s) => !s.full).length
-            const ratio = open / slots.length
-            const level = ratio > 0.5 ? ['Low', 'bg-emerald', 'text-emerald-600'] : ratio > 0.25 ? ['Moderate', 'bg-amber-400', 'text-amber-600'] : ['High', 'bg-rose-500', 'text-rose-600']
-            return (
-              <Reveal key={st.id} delay={i * 0.08}>
-                <div className="flex h-full flex-col rounded-3xl border border-slate-200 bg-white p-6 shadow-card">
-                  <div className="flex items-start justify-between gap-3">
-                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-royal/10 text-royal">
-                      <Building2 className="h-5 w-5" />
-                    </span>
-                    <DemoBadge />
-                  </div>
-                  <h3 className="mt-4 text-lg font-extrabold text-navy">{st.name}</h3>
-                  <p className="mt-1 flex items-center gap-1.5 text-sm text-navy-600">
-                    <MapPin className="h-3.5 w-3.5" /> {st.area}
-                  </p>
-                  <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
-                    <div className="rounded-2xl bg-canvas p-3">
-                      <p className="text-xs font-semibold text-slate-500">Open slots</p>
-                      <p className="mt-0.5 text-xl font-extrabold text-navy">{open}<span className="text-sm font-semibold text-slate-400">/{slots.length}</span></p>
-                    </div>
-                    <div className="rounded-2xl bg-canvas p-3">
-                      <p className="text-xs font-semibold text-slate-500">Expected crowd</p>
-                      <p className={`mt-1 flex items-center gap-1.5 text-base font-extrabold ${level[2]}`}>
-                        <span className={`h-2 w-2 rounded-full ${level[1]}`} /> {level[0]}
-                      </p>
-                    </div>
-                  </div>
-                  <Link to={`/book?station=${st.id}`} className="mt-5 inline-flex items-center justify-center gap-1.5 rounded-2xl border border-slate-200 py-3 text-sm font-bold text-navy transition hover:border-royal hover:text-royal">
-                    <Timer className="h-4 w-4" /> Book a slot here
-                  </Link>
-                </div>
-              </Reveal>
-            )
-          })}
+        <div className="mt-6 flex items-center gap-2 text-xs text-slate-500">
+          <DemoBadge /> Station names from public listings. Confirm addresses and phone numbers on the official website.
         </div>
+        <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <AnimatePresence initial={false}>
+            {list.map((n) => (
+              <motion.li key={n} layout initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.97 }} transition={{ duration: 0.2 }}
+                className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-slate-100 text-navy"><Building2 className="h-5 w-5" /></span>
+                  <div className="min-w-0">
+                    <p className="truncate font-extrabold text-navy">{n} Police Station</p>
+                    <p className="text-xs text-slate-500">Navi Mumbai Commissionerate · General services</p>
+                  </div>
+                </div>
+                <a href={maps(n + ' Police Station')} target="_blank" rel="noreferrer" className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-slate-200 text-royal transition hover:border-royal" aria-label={`Open ${n} Police Station in maps`}>
+                  <Navigation className="h-4 w-4" />
+                </a>
+              </motion.li>
+            ))}
+          </AnimatePresence>
+        </ul>
+        {list.length === 0 && <p className="mt-6 rounded-2xl bg-white p-6 text-center text-ink">No station matches “{q}”. Try another area name.</p>}
       </div>
     </section>
   )
 }
 
-/* ---------------- Why verification ---------------- */
-function WhyVerification() {
-  const points = [
-    { icon: ShieldCheck, title: 'Why it is required', text: 'Verification confirms that the details in your application, such as your address, are accurate.' },
-    { icon: ScanLine, title: 'What the officer checks', text: 'Usually your identity documents and your address details, as set out in official guidance.' },
-    { icon: FileSearch, title: 'If details are wrong', text: 'You may be asked for more information or documents. The outcome is decided by the police, not by this tool.' },
+/* ---------------- News carousel ---------------- */
+const NEWS: { cat: string; icon: LucideIcon; date: string; title: string; text: string; tone: string }[] = [
+  { cat: 'Cybercrime Alerts', icon: ShieldAlert, date: '2026-10-28', title: 'Fake “KYC update” messages are rising', text: 'Banks never ask for OTPs or PINs. If you lose money, call 1930 within the first hour.', tone: 'from-rose-500 to-orange-400' },
+  { cat: 'Citizen Information', icon: ClipboardList, date: '2026-10-21', title: 'What to bring for passport verification', text: 'Original identity and address proofs, your application reference and self-attested copies.', tone: 'from-royal to-cyan' },
+  { cat: 'Police Initiatives', icon: CalendarCheck2, date: '2026-10-14', title: 'Slot-based verification proposal', text: 'PoliceFlow proposes 15-minute slots with a fixed capacity so citizens wait less at the counter.', tone: 'from-emerald to-teal-400' },
+  { cat: 'Public Awareness', icon: Lock, date: '2026-10-07', title: 'Tenant verification protects both sides', text: 'Registering tenant details helps landlords and tenants and keeps neighbourhoods safer.', tone: 'from-indigo-500 to-royal' },
+  { cat: 'Important Announcements', icon: Bell, date: '2026-09-30', title: 'Report misuse of your documents', text: 'If you suspect your identity documents are being misused, report it through the official citizen portal.', tone: 'from-amber-500 to-rose-400' },
+]
+
+function News() {
+  const t = useT()
+  const ref = useRef<HTMLDivElement>(null)
+  const scroll = (dir: number) => {
+    const el = ref.current
+    if (!el) return
+    el.scrollBy({ left: dir * Math.min(el.clientWidth * 0.85, 400), behavior: 'smooth' })
+  }
+  return (
+    <section className="overflow-hidden bg-white py-20 sm:py-28">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex items-end justify-between gap-6">
+          <SectionHead eyebrow={t('news.eyebrow')} title={t('news.title')} />
+          <div className="hidden gap-2 sm:flex">
+            <button onClick={() => scroll(-1)} aria-label="Previous news" className="grid h-11 w-11 place-items-center rounded-full border border-slate-200 text-navy transition hover:border-royal hover:text-royal"><ChevronLeft className="h-5 w-5" /></button>
+            <button onClick={() => scroll(1)} aria-label="Next news" className="grid h-11 w-11 place-items-center rounded-full border border-slate-200 text-navy transition hover:border-royal hover:text-royal"><ChevronRight className="h-5 w-5" /></button>
+          </div>
+        </div>
+        <p className="mt-4 flex items-center gap-2 text-xs text-slate-500"><DemoBadge /> Sample articles for demonstration. Not official announcements.</p>
+      </div>
+      <div ref={ref} className="no-scrollbar mx-auto mt-8 flex max-w-7xl snap-x snap-mandatory gap-5 overflow-x-auto scroll-smooth px-4 pb-4 sm:px-6 lg:px-8">
+        {NEWS.map((n, i) => (
+          <Reveal key={n.title} delay={i * 0.06} className="w-[82%] shrink-0 snap-start min-[480px]:w-[60%] md:w-[40%] lg:w-[31%]">
+            <article className="group flex h-full flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-card transition duration-300 hover:-translate-y-1 hover:shadow-lift">
+              <div className={`relative h-44 overflow-hidden bg-gradient-to-br ${n.tone}`}>
+                <div className="absolute inset-0 opacity-20 [background-image:radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]" />
+                <n.icon className="absolute -bottom-6 -right-6 h-40 w-40 text-white/25 transition-transform duration-700 group-hover:scale-110 group-hover:-rotate-6" strokeWidth={1} />
+                <span className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1 text-[11px] font-bold text-navy">{n.cat}</span>
+              </div>
+              <div className="flex flex-1 flex-col p-5">
+                <time className="text-xs font-semibold text-slate-500" dateTime={n.date}>
+                  {new Date(n.date + 'T00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                </time>
+                <h3 className="mt-2 text-lg font-extrabold leading-snug text-navy">{n.title}</h3>
+                <p className="mt-2 flex-1 text-sm leading-relaxed text-ink">{n.text}</p>
+                <span className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-royal">
+                  Read more <ArrowUpRight className="h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+                </span>
+              </div>
+            </article>
+          </Reveal>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+/* ---------------- Institution ---------------- */
+function Institution() {
+  const panels = [
+    { icon: Landmark, title: 'A proposal for the Commissionerate', text: 'PoliceFlow is an independent proposal to organise verification appointments for Navi Mumbai Police. It has not been adopted or endorsed by the department.' },
+    { icon: Lock, title: 'Privacy by design', text: 'QR codes hold only random tokens. Aadhaar and passport numbers are never shown in URLs, passes or public pages. Officers see only what their duty needs.' },
+    { icon: ScrollText, title: 'Official information stays official', text: 'Leadership, orders, notices and legal procedures are published only on the official website. PoliceFlow links to it rather than copying it.' },
   ]
   return (
-    <section className="pb-20 sm:pb-28">
+    <section id="institution" className="scroll-mt-24 bg-canvas py-20 sm:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <SectionHead eyebrow="Explain my verification" title="Understand the process" />
-        <div className="mt-10 grid gap-5 md:grid-cols-3">
-          {points.map((p, i) => (
+        <SectionHead eyebrow="Institutional information" title="How PoliceFlow would be governed" />
+        <div className="mt-12 grid gap-5 lg:grid-cols-3">
+          {panels.map((p, i) => (
             <Reveal key={p.title} delay={i * 0.08}>
-              <div className="h-full rounded-3xl bg-white p-6 shadow-card">
-                <p.icon className="h-6 w-6 text-royal" />
-                <h3 className="mt-4 text-lg font-extrabold">{p.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-navy-600">{p.text}</p>
+              <div className="flex h-full flex-col rounded-3xl bg-white p-7 shadow-card">
+                <span className="grid h-12 w-12 place-items-center rounded-2xl bg-navy text-cyan"><p.icon className="h-6 w-6" /></span>
+                <h3 className="mt-5 text-xl font-extrabold text-navy">{p.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-ink">{p.text}</p>
               </div>
             </Reveal>
           ))}
         </div>
-        <p className="mt-6 text-xs text-slate-500">General information only. Refer to the official Passport Seva and police websites for current requirements.</p>
+        <Reveal className="mt-5">
+          <a href="https://www.navimumbaipolice.gov.in/" target="_blank" rel="noreferrer"
+            className="group flex flex-col items-start justify-between gap-4 rounded-3xl border-2 border-dashed border-slate-300 bg-white p-6 transition hover:border-royal sm:flex-row sm:items-center sm:p-8">
+            <div>
+              <p className="text-lg font-extrabold text-navy">Leadership, notices and official announcements</p>
+              <p className="mt-1 text-sm text-ink">Published on the official Navi Mumbai Police website.</p>
+            </div>
+            <span className="inline-flex items-center gap-2 rounded-xl bg-navy px-5 py-3 text-sm font-bold text-white transition group-hover:bg-royal">
+              Visit official site <ExternalLink className="h-4 w-4" />
+            </span>
+          </a>
+        </Reveal>
+      </div>
+    </section>
+  )
+}
+
+/* ---------------- Explainer + assistant ---------------- */
+const EXPLAIN: { icon: LucideIcon; t: L3; d: L3 }[] = [
+  { icon: Fingerprint, t: { en: 'Passport-related verification', mr: 'पासपोर्ट संबंधित पडताळणी', hi: 'पासपोर्ट संबंधित सत्यापन' }, d: { en: 'Confirms the identity and address details in your passport application.', mr: 'पासपोर्ट अर्जातील ओळख व पत्त्याची माहिती निश्चित करते.', hi: 'पासपोर्ट आवेदन में पहचान और पते की जानकारी की पुष्टि करता है.' } },
+  { icon: HomeIcon, t: { en: 'Address verification', mr: 'पत्ता पडताळणी', hi: 'पता सत्यापन' }, d: { en: 'Checks that you live at the address you gave.', mr: 'दिलेल्या पत्त्यावर तुम्ही राहता याची खात्री करते.', hi: 'जाँचता है कि आप दिए गए पते पर रहते हैं.' } },
+  { icon: ScrollText, t: { en: 'Police clearance procedures', mr: 'पोलीस क्लिअरन्स प्रक्रिया', hi: 'पुलिस क्लीयरेंस प्रक्रिया' }, d: { en: 'Clearance certificates follow their own official process and portal.', mr: 'क्लिअरन्स प्रमाणपत्रांसाठी स्वतंत्र अधिकृत प्रक्रिया व पोर्टल आहे.', hi: 'क्लीयरेंस प्रमाणपत्र की अपनी आधिकारिक प्रक्रिया और पोर्टल है.' } },
+  { icon: FileText, t: { en: 'Required supporting documents', mr: 'आवश्यक कागदपत्रे', hi: 'ज़रूरी दस्तावेज़' }, d: { en: 'Originals of identity and address proof, plus self-attested copies.', mr: 'ओळख व पत्त्याचे मूळ पुरावे आणि स्वसाक्षांकित प्रती.', hi: 'पहचान और पते के मूल प्रमाण, साथ में स्व-सत्यापित प्रतियाँ.' } },
+  { icon: ShieldCheck, t: { en: 'What happens during verification', mr: 'पडताळणी दरम्यान काय होते', hi: 'सत्यापन के दौरान क्या होता है' }, d: { en: 'The officer checks your documents and may ask simple questions about your details.', mr: 'अधिकारी कागदपत्रे तपासतात आणि माहितीबाबत साधे प्रश्न विचारू शकतात.', hi: 'अधिकारी दस्तावेज़ जाँचते हैं और आपकी जानकारी पर सरल प्रश्न पूछ सकते हैं.' } },
+  { icon: Bell, t: { en: 'What happens after the visit', mr: 'भेटीनंतर काय होते', hi: 'मुलाक़ात के बाद क्या होता है' }, d: { en: 'The police submit their report through the official channel. Track progress here.', mr: 'पोलीस अधिकृत माध्यमातून अहवाल सादर करतात. प्रगती येथे पहा.', hi: 'पुलिस आधिकारिक माध्यम से रिपोर्ट भेजती है. प्रगति यहाँ देखें.' } },
+]
+
+const QA: { q: L3; a: L3 }[] = [
+  { q: { en: 'How do I book an appointment?', mr: 'भेटीची वेळ कशी घ्यायची?', hi: 'अपॉइंटमेंट कैसे बुक करें?' }, a: { en: 'Tap “Book Appointment”, choose your service, enter your details and pick a 15-minute slot that still has room. You will get a digital pass.', mr: '“भेटीची वेळ घ्या” वर टॅप करा, सेवा निवडा, माहिती भरा आणि उपलब्ध १५ मिनिटांची वेळ निवडा. तुम्हाला डिजिटल पास मिळेल.', hi: '“अपॉइंटमेंट बुक करें” पर टैप करें, सेवा चुनें, जानकारी भरें और खाली 15 मिनट का स्लॉट चुनें. आपको डिजिटल पास मिलेगा.' } },
+  { q: { en: 'Which documents should I bring?', mr: 'कोणती कागदपत्रे आणावीत?', hi: 'कौन से दस्तावेज़ लाने हैं?' }, a: { en: 'Original identity proof, original address proof, your application reference and self-attested copies. Your pass lists the exact checklist for your service.', mr: 'मूळ ओळखपत्र, मूळ पत्त्याचा पुरावा, अर्ज क्रमांक आणि स्वसाक्षांकित प्रती. तुमच्या पासवर सेवेनुसार यादी असते.', hi: 'मूल पहचान प्रमाण, मूल पता प्रमाण, आवेदन संदर्भ और स्व-सत्यापित प्रतियाँ. आपके पास पर सेवा के अनुसार सूची होती है.' } },
+  { q: { en: 'Can I reschedule?', mr: 'वेळ बदलता येईल का?', hi: 'क्या समय बदल सकते हैं?' }, a: { en: 'Yes. Open Track Application, cancel the current booking and book a new slot. The old slot is released for others.', mr: 'होय. “अर्जाची स्थिती” उघडा, सध्याची भेट रद्द करा आणि नवीन वेळ घ्या.', hi: 'हाँ. “आवेदन की स्थिति” खोलें, मौजूदा बुकिंग रद्द करें और नया स्लॉट बुक करें.' } },
+  { q: { en: 'Does a high readiness score mean approval?', mr: 'जास्त तयारी गुण म्हणजे मंजुरी का?', hi: 'क्या उच्च तैयारी स्कोर का अर्थ स्वीकृति है?' }, a: { en: 'No. It only shows how prepared your documents are. The police make the final verification decision.', mr: 'नाही. तो फक्त कागदपत्रांची तयारी दाखवतो. अंतिम निर्णय पोलिसांचा असतो.', hi: 'नहीं. यह केवल दस्तावेज़ों की तैयारी दिखाता है. अंतिम निर्णय पुलिस का होता है.' } },
+]
+
+function Explainer() {
+  const t = useT()
+  const { lang, setLang } = useLang()
+  const [active, setActive] = useState(0)
+  return (
+    <section className="bg-white py-20 sm:py-28">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <SectionHead eyebrow={t('exp.eyebrow')} title={t('exp.title')} />
+        <div className="mt-12 grid gap-8 lg:grid-cols-[1.3fr_1fr]">
+          <div className="grid gap-4 sm:grid-cols-2">
+            {EXPLAIN.map((e, i) => (
+              <Reveal key={e.t.en} delay={(i % 2) * 0.06}>
+                <div className="flex h-full gap-4 rounded-2xl border border-slate-200 p-5 transition hover:border-royal/30 hover:bg-canvas">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-royal/10 text-royal"><e.icon className="h-5 w-5" /></span>
+                  <div>
+                    <h3 className="font-extrabold text-navy">{pick(lang, e.t)}</h3>
+                    <p className="mt-1 text-sm leading-relaxed text-ink">{pick(lang, e.d)}</p>
+                  </div>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+
+          <Reveal>
+            <div className="flex h-full flex-col overflow-hidden rounded-3xl bg-navy text-white shadow-lift">
+              <div className="flex items-center justify-between gap-3 border-b border-white/10 p-5">
+                <p className="flex items-center gap-2 font-extrabold"><MessageCircleQuestion className="h-5 w-5 text-cyan" /> {t('asst.title')}</p>
+                <div className="flex rounded-full bg-white/10 p-1 text-xs font-bold" role="group" aria-label="Assistant language">
+                  {(['en', 'mr', 'hi'] as Lang[]).map((l) => (
+                    <button key={l} onClick={() => setLang(l)} aria-pressed={lang === l} className={`rounded-full px-2.5 py-1 transition ${lang === l ? 'bg-white text-navy' : 'text-slate-300'}`}>
+                      {l === 'en' ? 'EN' : l === 'mr' ? 'मरा' : 'हिं'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex-1 space-y-3 p-5">
+                <p className="text-xs text-slate-400">{t('asst.hint')}</p>
+                <AnimatePresence mode="wait">
+                  <motion.div key={`${lang}-${active}`} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }} className="space-y-3">
+                    <p className="ml-auto w-fit max-w-[85%] rounded-2xl rounded-br-md bg-royal px-4 py-2.5 text-sm font-semibold">{pick(lang, QA[active].q)}</p>
+                    <p className="w-fit max-w-[92%] rounded-2xl rounded-bl-md bg-white/10 px-4 py-3 text-sm leading-relaxed text-slate-100">{pick(lang, QA[active].a)}</p>
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+              <div className="flex flex-wrap gap-2 border-t border-white/10 p-4">
+                {QA.map((x, i) => (
+                  <button key={i} onClick={() => setActive(i)} className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${i === active ? 'border-cyan bg-cyan/15 text-white' : 'border-white/15 text-slate-300 hover:border-white/40'}`}>
+                    {pick(lang, x.q)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </Reveal>
+        </div>
+        <p className="mt-6 flex items-start gap-2 text-xs text-slate-500">
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0" /> General information only. Follow the official Passport Seva and police websites for current requirements.
+        </p>
       </div>
     </section>
   )
@@ -294,31 +471,27 @@ function WhyVerification() {
 /* ---------------- FAQ ---------------- */
 function Faq() {
   const faqs = [
-    ['Is this an official police website?', 'No. PoliceFlow is a proposed prototype for demonstration. It is not affiliated with Navi Mumbai Police or any government body.'],
-    ['Can I reschedule or cancel?', 'Yes. Find your booking on the Track page and cancel it, then book a new slot. Cancelled slots are released to other citizens.'],
+    ['Is this an official police website?', 'No. PoliceFlow is an independent prototype proposed for Navi Mumbai Police. It is not affiliated with or endorsed by the department or any government body.'],
+    ['Where does verification take place?', 'At the Office of the Commissioner of Police, Navi Mumbai, at the slot you book.'],
     ['What does the QR code on my pass contain?', 'Only a random, non-guessable appointment token. It holds no Aadhaar, passport or other personal numbers.'],
-    ['Does a high readiness score mean approval?', 'No. The score only shows how complete your preparation is. The police make the final verification decision.'],
+    ['Can I reschedule or cancel?', 'Yes. Find your booking on the Track page, cancel it and book a new slot.'],
   ]
   const [open, setOpen] = useState<number | null>(0)
   return (
-    <section id="faq" className="scroll-mt-20 border-t border-slate-200 bg-white py-20 sm:py-28">
+    <section id="faq" className="scroll-mt-24 border-t border-slate-200 bg-canvas py-20 sm:py-28">
       <div className="mx-auto max-w-3xl px-4 sm:px-6">
         <SectionHead center eyebrow="FAQs" title="Common questions" />
-        <div className="mt-10 divide-y divide-slate-200 rounded-3xl border border-slate-200">
+        <div className="mt-10 divide-y divide-slate-200 overflow-hidden rounded-3xl border border-slate-200 bg-white">
           {faqs.map(([q, a], i) => (
             <div key={q}>
-              <button
-                onClick={() => setOpen(open === i ? null : i)}
-                className="flex w-full items-center justify-between gap-4 px-5 py-5 text-left text-base font-bold text-navy sm:px-6"
-                aria-expanded={open === i}
-              >
+              <button onClick={() => setOpen(open === i ? null : i)} className="flex w-full items-center justify-between gap-4 px-5 py-5 text-left font-bold text-navy sm:px-6" aria-expanded={open === i}>
                 {q}
                 <ChevronDown className={`h-5 w-5 shrink-0 text-royal transition-transform ${open === i ? 'rotate-180' : ''}`} />
               </button>
               <AnimatePresence initial={false}>
                 {open === i && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                    <p className="px-5 pb-5 text-sm leading-relaxed text-navy-600 sm:px-6">{a}</p>
+                    <p className="px-5 pb-5 text-sm leading-relaxed text-ink sm:px-6">{a}</p>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -332,15 +505,16 @@ function Faq() {
 
 /* ---------------- CTA ---------------- */
 function CtaBand() {
+  const t = useT()
   return (
-    <section className="px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
-      <Reveal className="relative mx-auto max-w-7xl overflow-hidden rounded-[2rem] bg-gradient-to-br from-navy via-navy-700 to-royal px-6 py-14 text-center text-white sm:px-12 sm:py-20">
-        <div aria-hidden className="absolute -left-20 -top-20 h-72 w-72 rounded-full bg-cyan/30 blur-3xl" />
-        <h2 className="relative text-3xl font-extrabold tracking-tight sm:text-5xl">Ready when you are.</h2>
-        <p className="relative mx-auto mt-4 max-w-xl text-slate-200">Pick a slot in under two minutes and arrive with everything you need.</p>
+    <section className="bg-canvas px-4 pb-20 sm:px-6 lg:px-8">
+      <Reveal className="relative mx-auto max-w-7xl overflow-hidden rounded-[2rem] bg-gradient-to-br from-navy-900 via-navy to-royal px-6 py-14 text-center text-white sm:px-12 sm:py-20">
+        <div aria-hidden className="hero-aurora absolute inset-0 opacity-60" />
+        <h2 className="relative text-3xl font-extrabold tracking-tight sm:text-5xl">{t('cta.title')}</h2>
+        <p className="relative mx-auto mt-4 max-w-xl text-slate-200">{t('cta.sub')}</p>
         <div className="relative mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-          <Link to="/book" className="rounded-2xl bg-white px-7 py-4 font-bold text-navy transition hover:-translate-y-0.5">Book Your Appointment</Link>
-          <Link to="/track" className="rounded-2xl border border-white/30 px-7 py-4 font-bold text-white transition hover:bg-white/10">Track Your Application</Link>
+          <Link to="/book" className="rounded-xl bg-white px-7 py-4 font-bold text-navy transition hover:-translate-y-0.5">{t('hero.book')}</Link>
+          <Link to="/track" className="rounded-xl border border-white/30 px-7 py-4 font-bold text-white transition hover:bg-white/10">{t('hero.track')}</Link>
         </div>
       </Reveal>
     </section>

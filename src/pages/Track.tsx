@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { CheckCircle2, Circle, Search, XCircle } from 'lucide-react'
 import { cancelAppointment, findAppointment, type Appointment } from '../lib/store'
@@ -9,8 +9,10 @@ import { Page } from './Book'
 const FLOW = ['Confirmed', 'Checked in', 'Completed'] as const
 
 export default function Track() {
-  const [q, setQ] = useState('')
-  const [result, setResult] = useState<Appointment | null | undefined>()
+  const [params] = useSearchParams()
+  const initial = params.get('id') ?? ''
+  const [q, setQ] = useState(initial.toUpperCase())
+  const [result, setResult] = useState<Appointment | null | undefined>(() => (initial ? findAppointment(initial) ?? null : undefined))
 
   const search = (e: FormEvent) => {
     e.preventDefault()

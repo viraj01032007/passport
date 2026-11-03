@@ -153,3 +153,7 @@ export function nextWorkingDays(n = 7) {
   }
   return days
 }
+
+export function findByMobile(mobile: string) {
+  return read().filter((a) => a.mobile === mobile).sort((a, b) => b.createdAt - a.createdAt)
+}

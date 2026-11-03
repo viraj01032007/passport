@@ -15,11 +15,12 @@ npm run build      # production build in dist/
 
 Deploys as-is to Vercel (`vercel.json` handles SPA routes) or any static host.
 
-## Add the hero photograph
+## Add hero photographs
 
-Put a **licensed** photo (your own shoot, or Unsplash / Pexels / a paid stock site) at
-`public/images/officer.jpg`. Until then the hero shows a neutral placeholder panel.
-Portrait, 1200px+ tall, with the officer slightly off-centre against an office background.
+The homepage hero is a slideshow. Put **licensed** photos (your own shoot, or Unsplash / Pexels / a
+paid stock site) at `public/images/hero-1.jpg`, `hero-2.jpg` and `hero-3.jpg` (landscape, 2400px or
+more wide). Any slide without a photo shows a designed navy backdrop instead. Do not use official
+seals, logos or photos of officials.
 
 ## What's included
 

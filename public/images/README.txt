@@ -1,8 +1,5 @@
-Put the hero photograph here as:  officer.jpg
+Hero slideshow photos (optional):  hero-1.jpg, hero-2.jpg, hero-3.jpg
 
-Use a photo you have the rights to (your own shoot, or a licensed stock image
-from Unsplash / Pexels / a paid stock site). Portrait orientation, at least
-1200px tall, officer slightly off-centre, police-station office background.
-
-Until officer.jpg exists, the hero shows a neutral placeholder panel.
-Do not use AI-generated images that imitate official insignia or seals.
+Use landscape photos you have the rights to (2400px+ wide). A dark navy overlay is
+applied automatically. Slides without a photo show a designed backdrop instead.
+Do not use official seals, logos, or photos of officials.

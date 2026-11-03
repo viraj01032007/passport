@@ -4,7 +4,7 @@
 
 :root {
   --navy: #102a43;
-  --royal: #2563eb;
+  --royal: #1d4ed8;
   --cyan: #38bdf8;
   --emerald: #10b981;
   --canvas: #f8fafc;
@@ -116,3 +116,15 @@ body {
   #pass { box-shadow: none !important; border-color: #cbd5e1 !important; break-inside: avoid; }
   #pass header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+/* ---------- Hero aurora ---------- */
+.hero-aurora {
+  background: conic-gradient(from 200deg at 60% 40%, transparent 0deg, rgba(56,189,248,.18) 60deg, transparent 120deg, rgba(29,78,216,.22) 220deg, transparent 300deg);
+  filter: blur(60px);
+  animation: aurora 22s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+@keyframes aurora { from { transform: translate3d(-4%, -2%, 0) rotate(0deg); } to { transform: translate3d(4%, 3%, 0) rotate(12deg); } }
+
+/* ---------- Journey progress line ---------- */
+.journey-line { transform-origin: left; }
