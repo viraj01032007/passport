@@ -96,15 +96,42 @@ body {
   .marquee { --gap: 1.5rem; }
 }
 
+/* ---------- Vertical marquee (bottom → top) ---------- */
+.vmarquee {
+  --vgap: 1rem;
+  --vduration: 30s;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 9%, #000 91%, transparent);
+          mask-image: linear-gradient(180deg, transparent, #000 9%, #000 91%, transparent);
+}
+.vmarquee__track {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: var(--vgap);
+  padding-bottom: var(--vgap);      /* same spacing across the seam */
+  will-change: transform;
+  backface-visibility: hidden;
+  animation: vmarquee-up var(--vduration) linear infinite;
+}
+.vmarquee:hover .vmarquee__track,
+.vmarquee:focus-within .vmarquee__track { animation-play-state: paused; }
+@keyframes vmarquee-up { from { transform: translate3d(0,0,0); } to { transform: translate3d(0,-100%,0); } }
+
 /* ---------- Reduced motion ---------- */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
   .marquee__track { animation: none !important; }
   .marquee { overflow-x: auto; -webkit-mask-image: none; mask-image: none; }
+  .vmarquee__track { animation: none !important; }
+  .vmarquee { overflow-y: auto; -webkit-mask-image: none; mask-image: none; }
   .underline-accent::after { transform: scaleX(1); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .marquee__track[aria-hidden='true'] { display: none; }
+  .marquee__track[aria-hidden='true'], .vmarquee__track[aria-hidden='true'] { display: none; }
 }
 
 /* ---------- Print: A4 verification pass ---------- */
