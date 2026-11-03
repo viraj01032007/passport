@@ -42,6 +42,24 @@ seals, logos or photos of officials.
 - **Tracking** (`/track`): look up by appointment ID or reference, see the status timeline, cancel
   (which releases the slot).
 
+## Staff and admin portal (demo)
+
+| Login | URL | Demo account |
+|---|---|---|
+| Staff | `/staff/login` | `staff1` / `Staff@123` (also `staff2`) |
+| Head admin | `/admin/login` | `admin` / `Admin@123` |
+
+- **Staff desk** (`/staff`): scan the pass QR with the camera, upload a photo of it, or type the ID.
+  Mark the citizen arrived, tick each original document, then accept the file, or request more info.
+- **Admin panel** (`/admin`):
+  - **Applications:** open, accept, decline or reopen any file.
+  - **Activity log:** who accepted what, when, with notes. Exports to CSV.
+  - **Staff accounts:** add accounts, disable or remove them, reset passwords.
+  - **Website content:** the notice banner, slideshow photos (upload or remove) and news items with photos.
+- These accounts are stored in the browser, so this is **not secure**. Before real use, move logins,
+  the activity log and content to the backend: bcrypt hashing, httpOnly JWT cookies, server-side role
+  checks and rate limiting.
+
 ## Connecting a backend
 
 `src/lib/store.ts` is a browser-only demo engine (localStorage). Replace `book`, `slotsFor`,

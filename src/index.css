@@ -155,3 +155,7 @@ body {
 
 /* ---------- Journey progress line ---------- */
 .journey-line { transform-origin: left; }
+
+/* ---------- QR scan line ---------- */
+.scanline { animation: scan 2.2s ease-in-out infinite alternate; top: 12px; }
+@keyframes scan { to { top: calc(100% - 14px); } }

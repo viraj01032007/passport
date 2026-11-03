@@ -126,7 +126,13 @@ export function Login() {
               {busy && <Loader2 className="h-4 w-4 animate-spin" />} {stage === 'mobile' ? 'Send OTP' : 'Verify & continue'}
             </button>
           </form>
-        ) : (
+        ) : null}
+        {stage !== 'done' && (
+          <p className="mt-5 text-center text-sm text-slate-500">
+            Police staff? <Link to="/staff/login" className="font-bold text-royal">Staff login</Link> · <Link to="/admin/login" className="font-bold text-royal">Admin login</Link>
+          </p>
+        )}
+        {stage === 'done' && (
           <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-card">
             <p className="flex items-center gap-2 font-bold text-emerald-600"><CheckCircle2 className="h-5 w-5" /> Signed in as {mobile}</p>
             <h2 className="mt-5 font-extrabold">My appointments</h2>

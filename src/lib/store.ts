@@ -50,9 +50,18 @@ export type Appointment = {
   email: string
   reference: string
   pin: string
-  status: 'Confirmed' | 'Cancelled' | 'Checked in' | 'Completed'
+  status: Status
   createdAt: number
+  history?: HistoryItem[]
+  acceptedBy?: string
+  acceptedAt?: number
 }
+
+export type Status = 'Confirmed' | 'Cancelled' | 'Checked in' | 'Documents verified' | 'Info requested' | 'Accepted' | 'Declined'
+export type HistoryItem = { at: number; by: string; name: string; action: string; note?: string }
+
+/** Statuses a citizen sees as progress steps. */
+export const PROGRESS: Status[] = ['Confirmed', 'Checked in', 'Documents verified', 'Accepted']
 
 const KEY = 'policeflow.appointments.v1'
 
@@ -66,6 +75,7 @@ function read(): Appointment[] {
 function write(list: Appointment[]) {
   try {
     localStorage.setItem(KEY, JSON.stringify(list))
+    window.dispatchEvent(new CustomEvent('pf-store', { detail: KEY }))
   } catch {
     /* storage unavailable – demo continues in memory only */
   }
@@ -124,6 +134,7 @@ export function book(input: Omit<Appointment, 'id' | 'token' | 'queueNo' | 'stat
     queueNo: `Q${String(slot.booked + 1).padStart(2, '0')}-${input.slot.replace(':', '')}`,
     status: 'Confirmed',
     createdAt: Date.now(),
+    history: [{ at: Date.now(), by: 'citizen', name: input.name, action: 'Booked appointment' }],
   }
   write([...list, appt])
   return appt
@@ -137,7 +148,67 @@ export function findAppointment(idOrRef: string) {
 }
 
 export function cancelAppointment(id: string) {
-  write(read().map((a) => (a.id === id ? { ...a, status: 'Cancelled' } : a)))
+  write(read().map((a) => (a.id === id ? { ...a, status: 'Cancelled', history: [...(a.history ?? []), { at: Date.now(), by: 'citizen', name: a.name, action: 'Cancelled by citizen' }] } : a)))
+}
+
+export function allAppointments() {
+  return read().sort((a, b) => (a.date + a.slot).localeCompare(b.date + b.slot))
+}
+
+/** Accepts the raw QR text ("PF1:<token>"), a bare token, or an appointment ID. */
+export function findByToken(raw: string) {
+  const v = raw.trim()
+  const token = v.startsWith('PF1:') ? v.slice(4) : v
+  return read().find((a) => a.token === token || a.id.toUpperCase() === token.toUpperCase())
+}
+
+/** Staff / admin status change. Records who did it and when on the appointment itself. */
+export function setStatus(id: string, status: Status, actor: { username: string; name: string }, note?: string): Appointment | undefined {
+  const list = read()
+  const i = list.findIndex((a) => a.id === id)
+  if (i < 0) return undefined
+  const a = list[i]
+  const updated: Appointment = {
+    ...a,
+    status,
+    ...(status === 'Accepted' ? { acceptedBy: `${actor.name} (${actor.username})`, acceptedAt: Date.now() } : {}),
+    history: [...(a.history ?? []), { at: Date.now(), by: actor.username, name: actor.name, action: status, note }],
+  }
+  list[i] = updated
+  write(list)
+  return updated
+}
+
+/** Synthetic appointments so the staff desk and admin panel have something to show. */
+export function seedSampleAppointments() {
+  const names = ['Aarav Patil', 'Sneha Kulkarni', 'Rohan Deshmukh', 'Priya Nair', 'Imran Shaikh', 'Kavya Joshi', 'Vikram Pawar', 'Neha Gupta']
+  const services: ServiceId[] = ['passport', 'passport', 'tenant', 'character']
+  const statuses: Status[] = ['Confirmed', 'Confirmed', 'Checked in', 'Documents verified', 'Accepted', 'Info requested', 'Confirmed', 'Accepted']
+  const day = nextWorkingDays(1)[0]
+  const list = read()
+  names.forEach((name, i) => {
+    const slot = slotsFor(STATIONS[0].id, day)[i]
+    const now = Date.now() - (names.length - i) * 600000
+    list.push({
+      id: `PF-DEMO-${String(i + 1).padStart(2, '0')}${randomToken(3)}`,
+      token: randomToken(),
+      queueNo: `Q0${(i % 5) + 1}-${slot.time.replace(':', '')}`,
+      service: services[i % services.length],
+      stationId: STATIONS[0].id,
+      date: day,
+      slot: slot.time,
+      name,
+      mobile: `98${String(20000000 + i * 1234567).slice(0, 8)}`,
+      email: name.split(' ')[0].toLowerCase() + '@example.com',
+      reference: `DEMO${String(100000 + i * 7919)}`,
+      pin: '400614',
+      status: statuses[i],
+      createdAt: now,
+      history: [{ at: now, by: 'citizen', name, action: 'Booked appointment' }],
+      ...(statuses[i] === 'Accepted' ? { acceptedBy: 'Verification Desk 1 (staff1)', acceptedAt: now + 300000 } : {}),
+    })
+  })
+  write(list)
 }
 
 export const serviceName = (id: ServiceId) => SERVICES.find((s) => s.id === id)?.name ?? id

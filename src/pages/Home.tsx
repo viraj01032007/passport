@@ -14,6 +14,7 @@ import DemoBadge from '../components/DemoBadge'
 import VerticalMarquee from '../components/VerticalMarquee'
 import { pick, useLang, useT, type Lang } from '../lib/i18n'
 import { STATIONS } from '../lib/store'
+import { useContent, type NewsCat } from '../lib/content'
 
 type L3 = { en: string; mr: string; hi: string }
 
@@ -32,6 +33,7 @@ function SectionHead({ eyebrow, title, sub, center = false, light = false }: { e
 export default function Home() {
   return (
     <>
+      <Notice />
       <HeroSlider />
 
       <section aria-label="Values" className="bg-navy py-4 sm:py-5">
@@ -64,6 +66,18 @@ export default function Home() {
       <Faq />
       <CtaBand />
     </>
+  )
+}
+
+function Notice() {
+  const { notice } = useContent()
+  if (!notice.trim()) return null
+  return (
+    <div className="border-b border-amber-200 bg-amber-50">
+      <p className="mx-auto flex max-w-7xl items-start gap-2 px-4 py-2.5 text-sm font-semibold text-amber-900 sm:px-6 lg:px-8">
+        <Megaphone className="mt-0.5 h-4 w-4 shrink-0" /> {notice}
+      </p>
+    </div>
   )
 }
 
@@ -328,16 +342,17 @@ function Stations() {
 }
 
 /* ---------------- News carousel ---------------- */
-const NEWS: { cat: string; icon: LucideIcon; date: string; title: string; text: string; tone: string }[] = [
-  { cat: 'Cybercrime Alerts', icon: ShieldAlert, date: '2026-10-28', title: 'Fake “KYC update” messages are rising', text: 'Banks never ask for OTPs or PINs. If you lose money, call 1930 within the first hour.', tone: 'from-rose-500 to-orange-400' },
-  { cat: 'Citizen Information', icon: ClipboardList, date: '2026-10-21', title: 'What to bring for passport verification', text: 'Original identity and address proofs, your application reference and self-attested copies.', tone: 'from-royal to-cyan' },
-  { cat: 'Police Initiatives', icon: CalendarCheck2, date: '2026-10-14', title: 'Slot-based verification proposal', text: 'PoliceFlow proposes 15-minute slots with a fixed capacity so citizens wait less at the counter.', tone: 'from-emerald to-teal-400' },
-  { cat: 'Public Awareness', icon: Lock, date: '2026-10-07', title: 'Tenant verification protects both sides', text: 'Registering tenant details helps landlords and tenants and keeps neighbourhoods safer.', tone: 'from-indigo-500 to-royal' },
-  { cat: 'Important Announcements', icon: Bell, date: '2026-09-30', title: 'Report misuse of your documents', text: 'If you suspect your identity documents are being misused, report it through the official citizen portal.', tone: 'from-amber-500 to-rose-400' },
-]
+const CAT_STYLE: Record<NewsCat, { icon: LucideIcon; tone: string }> = {
+  'Cybercrime Alerts': { icon: ShieldAlert, tone: 'from-rose-500 to-orange-400' },
+  'Citizen Information': { icon: ClipboardList, tone: 'from-royal to-cyan' },
+  'Police Initiatives': { icon: CalendarCheck2, tone: 'from-emerald to-teal-400' },
+  'Public Awareness': { icon: Lock, tone: 'from-indigo-500 to-royal' },
+  'Important Announcements': { icon: Bell, tone: 'from-amber-500 to-rose-400' },
+}
 
 function News() {
   const t = useT()
+  const { news } = useContent()
   const ref = useRef<HTMLDivElement>(null)
   const scroll = (dir: number) => {
     const el = ref.current
@@ -357,12 +372,19 @@ function News() {
         <p className="mt-4 flex items-center gap-2 text-xs text-slate-500"><DemoBadge /> Sample articles for demonstration. Not official announcements.</p>
       </div>
       <div ref={ref} className="no-scrollbar mx-auto mt-8 flex max-w-7xl snap-x snap-mandatory gap-5 overflow-x-auto scroll-smooth px-4 pb-4 sm:px-6 lg:px-8">
-        {NEWS.map((n, i) => (
-          <Reveal key={n.title} delay={i * 0.06} className="w-[82%] shrink-0 snap-start min-[480px]:w-[60%] md:w-[40%] lg:w-[31%]">
+        {news.length === 0 && <p className="text-sm text-slate-500">No updates right now.</p>}
+        {news.map((item, i) => { const n = { ...item, ...CAT_STYLE[item.cat] }; return (
+          <Reveal key={n.id} delay={i * 0.06} className="w-[82%] shrink-0 snap-start min-[480px]:w-[60%] md:w-[40%] lg:w-[31%]">
             <article className="group flex h-full flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-card transition duration-300 hover:-translate-y-1 hover:shadow-lift">
               <div className={`relative h-44 overflow-hidden bg-gradient-to-br ${n.tone}`}>
-                <div className="absolute inset-0 opacity-20 [background-image:radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]" />
-                <n.icon className="absolute -bottom-6 -right-6 h-40 w-40 text-white/25 transition-transform duration-700 group-hover:scale-110 group-hover:-rotate-6" strokeWidth={1} />
+                {n.image ? (
+                  <img src={n.image} alt="" className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                ) : (
+                  <>
+                    <div className="absolute inset-0 opacity-20 [background-image:radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]" />
+                    <n.icon className="absolute -bottom-6 -right-6 h-40 w-40 text-white/25 transition-transform duration-700 group-hover:scale-110 group-hover:-rotate-6" strokeWidth={1} />
+                  </>
+                )}
                 <span className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1 text-[11px] font-bold text-navy">{n.cat}</span>
               </div>
               <div className="flex flex-1 flex-col p-5">
@@ -377,7 +399,7 @@ function News() {
               </div>
             </article>
           </Reveal>
-        ))}
+        ) })}
       </div>
     </section>
   )

@@ -5,6 +5,7 @@ import {
   ArrowRight, CalendarCheck2, ChevronLeft, ChevronRight, FileCheck2, LayoutGrid, Pause, Play, QrCode, Search, ShieldCheck, Users,
 } from 'lucide-react'
 import { useT } from '../lib/i18n'
+import { useContent } from '../lib/content'
 import DemoBadge from './DemoBadge'
 
 /**
@@ -18,7 +19,7 @@ const SLIDES = [
 ]
 const DURATION = 6500
 
-function Backdrop({ i, active }: { i: number; active: boolean }) {
+function Backdrop({ i, active, src }: { i: number; active: boolean; src: string | null }) {
   const s = SLIDES[i]
   const [ok, setOk] = useState(true)
   const reduce = useReducedMotion()
@@ -37,7 +38,7 @@ function Backdrop({ i, active }: { i: number; active: boolean }) {
         transition={{ duration: DURATION / 1000 + 1.5, ease: 'linear' }}
       >
         {ok ? (
-          <img src={s.img} alt="" onError={() => setOk(false)} className="h-full w-full object-cover" style={{ objectPosition: s.pos }} />
+          <img src={src ?? s.img} alt="" onError={() => setOk(false)} className="h-full w-full object-cover" style={{ objectPosition: s.pos }} />
         ) : (
           <div className="relative h-full w-full bg-[#0B1F33]">
             <div className="absolute inset-0" style={{ background: `radial-gradient(60rem 40rem at 78% 30%, ${s.glow}, transparent 60%), radial-gradient(40rem 30rem at 10% 100%, rgba(29,78,216,.35), transparent 60%)` }} />
@@ -53,6 +54,7 @@ function Backdrop({ i, active }: { i: number; active: boolean }) {
 export default function HeroSlider() {
   const t = useT()
   const reduce = useReducedMotion()
+  const content = useContent()
   const [idx, setIdx] = useState(0)
   const [paused, setPaused] = useState(false)
   const [hover, setHover] = useState(false)
@@ -98,7 +100,7 @@ export default function HeroSlider() {
     >
       <motion.div className="absolute -inset-6" style={{ x: bgX, y: bgY }}>
         <AnimatePresence initial={false}>
-          <Backdrop key={idx} i={idx} active />
+          <Backdrop key={`${idx}-${content.heroImages[idx] ? 'u' : 'd'}`} i={idx} active src={content.heroImages[idx] ?? null} />
         </AnimatePresence>
       </motion.div>
       {/* navy overlays for legibility */}

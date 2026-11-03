@@ -2,11 +2,10 @@ import { useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { CheckCircle2, Circle, Search, XCircle } from 'lucide-react'
-import { cancelAppointment, findAppointment, type Appointment } from '../lib/store'
+import { PROGRESS, cancelAppointment, findAppointment, type Appointment } from '../lib/store'
 import PassCard from '../components/PassCard'
 import { Page } from './Book'
 
-const FLOW = ['Confirmed', 'Checked in', 'Completed'] as const
 
 export default function Track() {
   const [params] = useSearchParams()
@@ -26,7 +25,7 @@ export default function Track() {
     setResult(findAppointment(result.id) ?? null)
   }
 
-  const stage = result ? FLOW.indexOf(result.status as (typeof FLOW)[number]) : -1
+  const stage = result ? (result.status === 'Info requested' ? 1 : PROGRESS.indexOf(result.status)) : -1
 
   return (
     <Page>
@@ -62,14 +61,24 @@ export default function Track() {
               {result.status === 'Cancelled' ? (
                 <p className="flex items-center gap-2 font-bold text-rose-600"><XCircle className="h-5 w-5" /> This appointment was cancelled and its slot released.</p>
               ) : (
-                <ol className="grid grid-cols-3 gap-2">
-                  {FLOW.map((s, i) => (
+                <ol className="grid grid-cols-4 gap-2">
+                  {PROGRESS.map((s, i) => (
                     <li key={s} className="text-center">
                       {i <= stage ? <CheckCircle2 className="mx-auto h-7 w-7 text-emerald" /> : <Circle className="mx-auto h-7 w-7 text-slate-300" />}
                       <p className={`mt-2 text-xs font-bold sm:text-sm ${i <= stage ? 'text-navy' : 'text-slate-400'}`}>{s}</p>
                     </li>
                   ))}
                 </ol>
+              )}
+              {result.status === 'Info requested' && (
+                <p className="mt-5 rounded-xl bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+                  The verification desk needs more information: {result.history?.slice(-1)[0]?.note || 'please contact the office.'}
+                </p>
+              )}
+              {result.status === 'Declined' && (
+                <p className="mt-5 rounded-xl bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
+                  This application was not accepted. {result.history?.slice(-1)[0]?.note}
+                </p>
               )}
               {result.status === 'Confirmed' && (
                 <button onClick={cancel} className="mt-6 w-full rounded-2xl border border-rose-200 py-3 text-sm font-bold text-rose-600 hover:bg-rose-50 sm:w-auto sm:px-6">

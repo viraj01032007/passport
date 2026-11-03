@@ -7,6 +7,9 @@ import Book, { Page } from './pages/Book'
 import Track from './pages/Track'
 import { About, Contact, Login } from './pages/Info'
 import { LangProvider } from './lib/i18n'
+import { PortalLogin } from './pages/portal/shared'
+import StaffDesk from './pages/portal/StaffDesk'
+import AdminPanel from './pages/portal/AdminPanel'
 
 /** Scroll to #hash targets (e.g. /#services) and to top on page change. */
 function ScrollManager() {
@@ -50,6 +53,10 @@ export default function App() {
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/staff/login" element={<PortalLogin role="staff" />} />
+          <Route path="/staff" element={<StaffDesk />} />
+          <Route path="/admin/login" element={<PortalLogin role="admin" />} />
+          <Route path="/admin" element={<AdminPanel />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </div>

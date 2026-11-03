@@ -38,6 +38,8 @@ const cols: { title: string; links: { to: string; label: string; ext?: boolean }
       { to: '/about#privacy', label: 'Privacy policy' },
       { to: '/about#terms', label: 'Terms and conditions' },
       { to: '/about#accessibility', label: 'Accessibility' },
+      { to: '/staff/login', label: 'Staff login' },
+      { to: '/admin/login', label: 'Admin login' },
     ],
   },
 ]
