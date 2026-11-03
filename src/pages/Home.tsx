@@ -7,14 +7,13 @@ import {
   MessageCircleQuestion, MonitorSmartphone, Navigation, Phone, QrCode, ScrollText, Search, ShieldAlert, ShieldCheck, Siren, UserRound,
   Users, type LucideIcon,
 } from 'lucide-react'
-import HeroSlider from '../components/HeroSlider'
 import Marquee from '../components/Marquee'
 import Reveal from '../components/Reveal'
 import DemoBadge from '../components/DemoBadge'
 import VerticalMarquee from '../components/VerticalMarquee'
 import { pick, useLang, useT, type Lang } from '../lib/i18n'
 import { STATIONS } from '../lib/store'
-import { useContent, type NewsCat } from '../lib/content'
+import { useContent, type NewsCat, type Profile } from '../lib/content'
 
 type L3 = { en: string; mr: string; hi: string }
 
@@ -34,7 +33,7 @@ export default function Home() {
   return (
     <>
       <Notice />
-      <HeroSlider />
+      <PortalHero />
 
       <section aria-label="Values" className="bg-navy py-4 sm:py-5">
         <Marquee
@@ -56,7 +55,6 @@ export default function Home() {
         />
       </section>
 
-      <QuickServices />
       <Journey />
       <Helplines />
       <Stations />
@@ -123,80 +121,86 @@ function ServiceCard({ s, hidden = false, compact = false }: { s: Svc; hidden?: 
     : <Link to={s.to} tabIndex={tab} className={cls}>{inner}</Link>
 }
 
-function QuickServices() {
-  const t = useT()
-  const loc = STATIONS[0]
+/* ---------------- Three-column portal hero ---------------- */
+function ProfileCard({ p, hidden = false }: { p: Profile; hidden?: boolean }) {
+  const empty = !p.image && !p.name
   return (
-    <section id="services" className="scroll-mt-24 bg-canvas py-20 sm:py-24">
-      <div className="mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 md:grid-cols-[280px_1fr] md:gap-8 lg:grid-cols-[370px_1fr] lg:gap-14 lg:px-8">
-        {/* LEFT – vertical information marquee (tablet & desktop) */}
-        <div className="order-2 min-w-0 md:order-1">
-          <div className="relative hidden rounded-[1.75rem] border border-slate-200 bg-gradient-to-b from-white to-slate-50 p-3 md:block lg:p-4">
-            <p className="flex items-center gap-2 px-2 pb-3 pt-1 text-[11px] font-extrabold uppercase tracking-[0.2em] text-navy-600">
-              <span className="pulse-dot" /> {t('svc.eyebrow')}
-            </p>
-            <VerticalMarquee
-              label={t('svc.eyebrow')}
-              duration={32}
-              gap="0.875rem"
-              className="h-[560px] lg:h-[600px]"
-              render={(hidden) => SERVICES.map((s) => <ServiceCard key={s.t.en} s={s} hidden={hidden} />)}
-            />
-          </div>
+    <figure tabIndex={hidden ? -1 : undefined} className="group relative aspect-[4/5] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card transition duration-300 hover:-translate-y-1 hover:shadow-lift">
+      {p.image ? (
+        <img src={p.image} alt={p.name || 'Profile photo'} className="absolute inset-0 h-full w-full object-cover" />
+      ) : (
+        <div className="absolute inset-0 grid place-items-center bg-gradient-to-b from-slate-50 to-slate-100">
+          <UserRound className="h-16 w-16 text-slate-300" strokeWidth={1.2} />
+        </div>
+      )}
+      {!empty && (
+        <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy-900/95 via-navy-900/70 to-transparent p-4 pt-12 text-white">
+          <p className="font-extrabold leading-tight">{p.name}</p>
+          {p.role && <p className="mt-0.5 text-xs font-semibold text-cyan">{p.role}</p>}
+          {p.dept && <p className="text-[11px] text-slate-300">{p.dept}</p>}
+        </figcaption>
+      )}
+    </figure>
+  )
+}
 
-          {/* mobile – compact swipe row */}
+function PortalHero() {
+  const t = useT()
+  const { profiles } = useContent()
+  return (
+    <section id="services" aria-label="PoliceFlow home" className="relative scroll-mt-24 overflow-hidden bg-canvas">
+      <div aria-hidden className="absolute inset-x-0 top-0 h-[420px] bg-[radial-gradient(50rem_24rem_at_50%_0%,rgba(29,78,216,.10),transparent_70%)]" />
+      <div className="relative mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:px-6 md:grid-cols-[240px_1fr_220px] md:py-10 lg:grid-cols-[300px_1fr_260px] lg:gap-8 lg:px-8">
+        {/* LEFT – services, bottom → top */}
+        <div className="order-2 min-w-0 md:order-1">
+          <p className="mb-3 flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.2em] text-navy-600">
+            <span className="pulse-dot" /> {t('svc.eyebrow')}
+          </p>
+          <VerticalMarquee
+            label={t('svc.eyebrow')}
+            duration={32}
+            gap="0.75rem"
+            className="hidden h-[620px] md:flex"
+            render={(hidden) => SERVICES.map((s) => <ServiceCard key={s.t.en} s={s} hidden={hidden} />)}
+          />
           <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 md:hidden" role="region" aria-label={t('svc.eyebrow')}>
             {SERVICES.map((s) => (
-              <div key={s.t.en} className="w-[72%] shrink-0 snap-start min-[480px]:w-[46%]">
-                <ServiceCard s={s} compact />
-              </div>
+              <div key={s.t.en} className="w-[72%] shrink-0 snap-start min-[480px]:w-[46%]"><ServiceCard s={s} compact /></div>
             ))}
           </div>
-          <p className="mt-2 text-center text-xs text-slate-400 md:hidden">Swipe for more services →</p>
         </div>
 
-        {/* RIGHT – heading and primary actions */}
-        <div className="order-1 min-w-0 md:order-2">
-          <SectionHead eyebrow={t('svc.eyebrow')} title={t('svc.title')} sub={t('svc.sub')} />
-          <div className="mt-8 grid gap-4 lg:grid-cols-2">
-            <Reveal className="lg:col-span-2">
-              <Link to="/book" className="group relative flex flex-col gap-5 overflow-hidden rounded-3xl bg-gradient-to-br from-navy to-royal p-6 text-white shadow-lift sm:flex-row sm:items-center sm:justify-between sm:p-8">
-                <div aria-hidden className="absolute -right-12 -top-12 h-48 w-48 rounded-full bg-cyan/25 blur-2xl" />
-                <div className="relative">
-                  <CalendarCheck2 className="h-8 w-8 text-cyan" />
-                  <p className="mt-4 text-2xl font-extrabold sm:text-3xl">{t('nav.book')}</p>
-                  <p className="mt-1 max-w-md text-sm text-slate-200">Passport, tenant and character verification at {loc.name}.</p>
-                </div>
-                <span className="relative inline-flex w-fit items-center gap-2 rounded-xl bg-white px-5 py-3 font-bold text-navy transition group-hover:gap-3">
-                  Start booking <ArrowRight className="h-4 w-4" />
-                </span>
-              </Link>
-            </Reveal>
-            <Reveal delay={0.06}>
-              <Link to="/track" className="group flex h-full items-center gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-card transition hover:-translate-y-1 hover:shadow-lift">
-                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-royal/10 text-royal"><Search className="h-6 w-6" /></span>
-                <span className="flex-1">
-                  <span className="block font-extrabold text-navy">{t('nav.track')}</span>
-                  <span className="block text-sm text-ink">Status, digital pass or cancel</span>
-                </span>
-                <ArrowRight className="h-5 w-5 text-royal transition-transform group-hover:translate-x-1" />
-              </Link>
-            </Reveal>
-            <Reveal delay={0.12}>
-              <a href="#stations" className="group flex h-full items-center gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-card transition hover:-translate-y-1 hover:shadow-lift">
-                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-emerald/10 text-emerald-600"><MapPin className="h-6 w-6" /></span>
-                <span className="flex-1">
-                  <span className="block font-extrabold text-navy">Verification location</span>
-                  <span className="block text-sm text-ink">{loc.area}</span>
-                </span>
-                <ArrowRight className="h-5 w-5 text-royal transition-transform group-hover:translate-x-1" />
+        {/* CENTRE – reserved, stays still */}
+        <div className="order-1 flex min-w-0 flex-col md:order-2">
+          <div className="grid min-h-[260px] flex-1 place-items-center rounded-3xl border-2 border-dashed border-slate-300 bg-white/60 md:min-h-[480px]" aria-hidden />
+          <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
+            {[['112', t('top.emergency')], ['1091', t('top.women')], ['1930', t('top.cyber')]].map(([n, l]) => (
+              <a key={n} href={`tel:${n}`} className="flex flex-col items-center rounded-2xl border border-slate-200 bg-white px-2 py-3 text-center shadow-card transition hover:-translate-y-0.5 hover:border-royal">
+                <span className="flex items-center gap-1.5 text-xl font-extrabold tabular-nums text-navy sm:text-2xl"><Phone className="h-4 w-4 text-royal" />{n}</span>
+                <span className="text-[11px] font-semibold text-slate-500 sm:text-xs">{l}</span>
               </a>
-            </Reveal>
+            ))}
           </div>
-          <p className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-500">
-            <span className="flex items-center gap-1.5"><span className="rounded-full bg-royal/10 px-2 py-0.5 font-bold text-royal">{t('svc.pf')}</span> opens on this site</span>
-            <span className="flex items-center gap-1.5"><span className="rounded-full bg-slate-100 px-2 py-0.5 font-bold text-slate-600">{t('svc.official')}</span> opens a government website</span>
-          </p>
+          <div className="mt-3 grid grid-cols-2 gap-2 sm:gap-3">
+            <Link to="/book" className="flex items-center justify-center gap-2 rounded-xl bg-royal py-3.5 text-sm font-bold text-white transition hover:bg-navy">{t('hero.book')} <ArrowRight className="h-4 w-4" /></Link>
+            <Link to="/track" className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-3.5 text-sm font-bold text-navy transition hover:border-royal"><Search className="h-4 w-4 text-royal" /> {t('hero.track')}</Link>
+          </div>
+        </div>
+
+        {/* RIGHT – profile posters, bottom → top */}
+        <div className="order-3 min-w-0">
+          <VerticalMarquee
+            label="Profiles"
+            duration={40}
+            gap="0.75rem"
+            className="hidden h-[620px] md:flex md:mt-[30px]"
+            render={(hidden) => profiles.map((p) => <ProfileCard key={p.id} p={p} hidden={hidden} />)}
+          />
+          <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 md:hidden" role="region" aria-label="Profiles">
+            {profiles.map((p) => (
+              <div key={p.id} className="w-[42%] shrink-0 snap-start min-[480px]:w-[30%]"><ProfileCard p={p} /></div>
+            ))}
+          </div>
         </div>
       </div>
     </section>

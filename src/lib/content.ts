@@ -8,14 +8,18 @@ export type NewsItem = { id: string; cat: NewsCat; date: string; title: string; 
 export type NewsCat = 'Cybercrime Alerts' | 'Citizen Information' | 'Police Initiatives' | 'Public Awareness' | 'Important Announcements'
 export const NEWS_CATS: NewsCat[] = ['Cybercrime Alerts', 'Citizen Information', 'Police Initiatives', 'Public Awareness', 'Important Announcements']
 
+export type Profile = { id: string; name: string; role: string; dept: string; image?: string }
+
 export type SiteContent = {
   notice: string
+  profiles: Profile[]
   heroImages: (string | null)[] // data URLs; null = designed backdrop
   news: NewsItem[]
 }
 
 export const DEFAULT_CONTENT: SiteContent = {
   notice: '',
+  profiles: Array.from({ length: 6 }, (_, i) => ({ id: `p${i + 1}`, name: '', role: '', dept: '' })),
   heroImages: [null, null, null],
   news: [
     { id: 'n1', cat: 'Cybercrime Alerts', date: '2026-10-28', title: 'Fake “KYC update” messages are rising', text: 'Banks never ask for OTPs or PINs. If you lose money, call 1930 within the first hour.' },

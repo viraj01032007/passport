@@ -6,7 +6,7 @@ import {
 import { allAppointments, seedSampleAppointments, serviceName, type Appointment, type Status } from '../../lib/store'
 import { readLog } from '../../lib/audit'
 import { addUser, listUsers, removeUser, setActive, setPassword, type Role, type Session } from '../../lib/auth'
-import { NEWS_CATS, imageToDataUrl, updateContent, useContent, type NewsItem } from '../../lib/content'
+import { NEWS_CATS, imageToDataUrl, updateContent, useContent, type NewsItem, type Profile } from '../../lib/content'
 import { ApplicantPanel, PortalShell, RequireRole, StatusPill, fmtTime, useStoreTick } from './shared'
 
 type Tab = 'overview' | 'applications' | 'activity' | 'staff' | 'website'
@@ -169,7 +169,7 @@ function ActivityLog() {
     (kind === 'all' ||
       (kind === 'decisions' && /Accepted|Declined|Marked|Request/.test(l.action)) ||
       (kind === 'signin' && /Sign|login/i.test(l.action)) ||
-      (kind === 'website' && /photo|notice|news/i.test(l.action))))
+      (kind === 'website' && /photo|notice|news|profile/i.test(l.action))))
 
   const exportCsv = () => {
     const rows = [['Time', 'Username', 'Name', 'Role', 'Action', 'Target', 'Note'], ...list.map((l) => [new Date(l.at).toISOString(), l.by, l.name, l.role, l.action, l.target ?? '', l.note ?? ''])]
@@ -292,11 +292,6 @@ function Website({ session }: { session: Session }) {
     setMsg(null)
     try { await fn(); setMsg({ ok: true, text: ok }) } catch (e) { setMsg({ ok: false, text: (e as Error).message }) }
   }
-  const setHero = (i: number, v: string | null) => {
-    const heroImages = [...content.heroImages]
-    heroImages[i] = v
-    updateContent(session, { heroImages }, v ? 'Uploaded hero photo' : 'Removed hero photo', `Slide ${i + 1}`)
-  }
   const saveNews = (e: FormEvent) => {
     e.preventDefault()
     run(() => {
@@ -319,24 +314,18 @@ function Website({ session }: { session: Session }) {
         </div>
       </Card>
 
-      <Card title="Homepage slideshow photos">
-        <p className="mb-4 text-sm text-ink">Upload a licensed landscape photo for each slide. Slides without a photo use the designed navy background.</p>
-        <div className="grid gap-4 sm:grid-cols-3">
-          {content.heroImages.map((img, i) => (
-            <div key={i} className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-              <div className="relative aspect-video bg-navy">
-                {img ? <img src={img} alt={`Slide ${i + 1}`} className="h-full w-full object-cover" /> : <div className="grid h-full place-items-center text-xs font-semibold text-slate-300">Default background</div>}
-                <span className="absolute left-2 top-2 rounded-full bg-white/90 px-2 py-0.5 text-[11px] font-bold text-navy">Slide {i + 1}</span>
-              </div>
-              <div className="flex gap-2 p-3">
-                <label className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-slate-200 py-2 text-sm font-bold text-navy hover:border-royal">
-                  <ImagePlus className="h-4 w-4" /> {img ? 'Replace' : 'Upload'}
-                  <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) run(async () => setHero(i, await imageToDataUrl(f)), `Slide ${i + 1} photo updated.`) }} />
-                </label>
-                {img && <button onClick={() => run(() => setHero(i, null), `Slide ${i + 1} photo removed.`)} aria-label={`Remove slide ${i + 1} photo`} className="grid w-10 place-items-center rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50"><Trash2 className="h-4 w-4" /></button>}
-              </div>
-            </div>
+      <Card title="Right-column profile cards">
+        <p className="mb-4 text-sm text-ink">These scroll on the right of the homepage. Empty slots show a blank frame. Only add people and photos the department has authorised.</p>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {content.profiles.map((p, i) => (
+            <ProfileEditor key={p.id} index={i} p={p} onSave={(next, action) => run(() => updateContent(session, { profiles: content.profiles.map((x) => (x.id === p.id ? next : x)) }, action, `Profile slot ${i + 1}`), `Profile slot ${i + 1} saved.`)} onError={(text) => setMsg({ ok: false, text })} />
           ))}
+        </div>
+        <div className="mt-4 flex gap-2">
+          <button onClick={() => run(() => updateContent(session, { profiles: [...content.profiles, { id: crypto.randomUUID(), name: '', role: '', dept: '' }] }, 'Added profile slot'), 'Slot added.')} className="flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-navy hover:border-royal"><Plus className="h-4 w-4" /> Add slot</button>
+          {content.profiles.length > 3 && (
+            <button onClick={() => run(() => updateContent(session, { profiles: content.profiles.slice(0, -1) }, 'Removed profile slot'), 'Last slot removed.')} className="flex items-center gap-2 rounded-xl border border-rose-200 px-4 py-2.5 text-sm font-bold text-rose-600 hover:bg-rose-50"><Trash2 className="h-4 w-4" /> Remove last slot</button>
+          )}
         </div>
       </Card>
 
@@ -386,6 +375,32 @@ function Website({ session }: { session: Session }) {
             </div>
           </form>
         </Card>
+      </div>
+    </div>
+  )
+}
+
+function ProfileEditor({ index, p, onSave, onError }: { index: number; p: Profile; onSave: (p: Profile, action: string) => void; onError: (t: string) => void }) {
+  const [d, setD] = useState(p)
+  const dirty = d.name !== p.name || d.role !== p.role || d.dept !== p.dept || d.image !== p.image
+  return (
+    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+      <div className="relative aspect-[4/3] bg-slate-100">
+        {d.image ? <img src={d.image} alt="" className="h-full w-full object-cover" /> : <div className="grid h-full place-items-center text-xs font-semibold text-slate-400">Empty slot</div>}
+        <span className="absolute left-2 top-2 rounded-full bg-white/90 px-2 py-0.5 text-[11px] font-bold text-navy">Slot {index + 1}</span>
+      </div>
+      <div className="space-y-2 p-3">
+        <input value={d.name} onChange={(e) => setD({ ...d, name: e.target.value })} placeholder="Name" className="w-full rounded-lg border border-slate-200 px-2.5 py-2 text-sm" />
+        <input value={d.role} onChange={(e) => setD({ ...d, role: e.target.value })} placeholder="Designation" className="w-full rounded-lg border border-slate-200 px-2.5 py-2 text-sm" />
+        <input value={d.dept} onChange={(e) => setD({ ...d, dept: e.target.value })} placeholder="Department" className="w-full rounded-lg border border-slate-200 px-2.5 py-2 text-sm" />
+        <div className="flex gap-2">
+          <label className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-slate-200 py-2 text-sm font-bold text-navy hover:border-royal">
+            <ImagePlus className="h-4 w-4" /> Photo
+            <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={async (e) => { const f = e.target.files?.[0]; e.target.value = ''; if (!f) return; try { setD({ ...d, image: await imageToDataUrl(f, 700, 0.8) }) } catch (x) { onError((x as Error).message) } }} />
+          </label>
+          {(d.image || d.name) && <button onClick={() => { const empty = { id: p.id, name: '', role: '', dept: '' }; setD(empty); onSave(empty, 'Cleared profile slot') }} className="rounded-lg border border-rose-200 px-2.5 text-sm font-bold text-rose-600">Clear</button>}
+        </div>
+        <button disabled={!dirty} onClick={() => onSave(d, d.image !== p.image ? 'Updated profile photo' : 'Edited profile')} className="w-full rounded-lg bg-navy py-2 text-sm font-bold text-white hover:bg-royal disabled:opacity-40">Save</button>
       </div>
     </div>
   )
