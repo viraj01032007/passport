@@ -7,7 +7,7 @@ import { LANGS, useLang, useT } from '../lib/i18n'
 export function Logo({ light = false }: { light?: boolean }) {
   return (
     <Link to="/" className="flex items-center gap-2.5" aria-label="PoliceFlow home">
-      <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-navy to-royal text-white shadow-card">
+      <span className="grid h-10 w-10 place-items-center rounded-xl bg-navy text-white shadow-card">
         <ShieldCheck className="h-5 w-5" strokeWidth={2.2} />
       </span>
       <span className="leading-tight">
@@ -50,7 +50,7 @@ export function TopBar() {
           </li>
         </ul>
         <div className="flex shrink-0 items-center gap-3">
-          <span className="hidden items-center gap-1.5 text-amber-300 lg:flex">
+          <span className="hidden items-center gap-1.5 text-slate-300 lg:flex">
             <ShieldAlert className="h-3 w-3" /> {t('top.proposal')}
           </span>
           <label className="flex items-center gap-1.5">

@@ -5,7 +5,7 @@ import {
   AlertTriangle, ArrowRight, ArrowUpRight, Baby, BadgeCheck, Bell, Building2, CalendarCheck2, ChevronDown, ChevronLeft, ChevronRight,
   ClipboardList, ExternalLink, FileSearch, FileText, Fingerprint, HeartPulse, Home as HomeIcon, Landmark, Lock, MapPin, Megaphone,
   MessageCircleQuestion, MonitorSmartphone, Navigation, Phone, QrCode, ScrollText, Search, ShieldAlert, ShieldCheck, Siren, UserRound,
-  Users, type LucideIcon,
+  Users, ImagePlus, X, type LucideIcon,
 } from 'lucide-react'
 import Marquee from '../components/Marquee'
 import Reveal from '../components/Reveal'
@@ -15,6 +15,8 @@ import { pick, useLang, useT, type Lang } from '../lib/i18n'
 import { STATIONS } from '../lib/store'
 import { useContent, type NewsCat, type Profile } from '../lib/content'
 import { useMediaUrl } from '../lib/media'
+import { useSession } from '../lib/auth'
+import CenterUploader from '../components/CenterUploader'
 
 type L3 = { en: string; mr: string; hi: string }
 
@@ -148,23 +150,47 @@ function ProfileCard({ p, hidden = false }: { p: Profile; hidden?: boolean }) {
 
 function CenterStage() {
   const { center } = useContent()
+  const session = useSession()
+  const [editing, setEditing] = useState(false)
   const url = useMediaUrl(center?.src)
   const fit = center?.fit === 'cover' ? 'object-cover' : 'object-contain'
+  const isAdmin = session?.role === 'admin'
   return (
-    <figure className="relative grid aspect-[4/3] w-full place-items-center overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-card md:aspect-auto md:min-h-[480px] md:flex-1">
-      {center && url ? (
-        center.kind === 'video' ? (
-          <video src={url} className={`absolute inset-0 h-full w-full ${fit}`} autoPlay muted loop playsInline aria-label={center.caption || 'Featured video'} />
+    <div className="center-ring relative rounded-[1.6rem] p-[2px] md:flex md:flex-1 md:flex-col">
+      <figure className="relative grid aspect-[4/3] w-full place-items-center overflow-hidden rounded-3xl bg-white md:aspect-auto md:min-h-[480px] md:flex-1">
+        {center && url ? (
+          center.kind === 'video' ? (
+            <video key={url} src={url} className={`media-in absolute inset-0 h-full w-full ${fit}`} autoPlay muted loop playsInline aria-label={center.caption || 'Featured video'} />
+          ) : (
+            <img src={url} alt={center.caption || 'Featured image'} className={`media-in absolute inset-0 h-full w-full ${fit} ${center.fit === 'contain' ? 'p-6' : ''}`} />
+          )
         ) : (
-          <img src={url} alt={center.caption || 'Featured image'} className={`absolute inset-0 h-full w-full ${fit} ${center.fit === 'contain' ? 'p-6' : ''}`} />
-        )
-      ) : (
-        <div aria-hidden className="absolute inset-3 rounded-2xl border-2 border-dashed border-slate-200" />
-      )}
-      {center?.caption && url && (
-        <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy-900/85 to-transparent p-4 pt-10 text-sm font-semibold text-white">{center.caption}</figcaption>
-      )}
-    </figure>
+          <div aria-hidden className="center-empty absolute inset-0" />
+        )}
+        {center?.caption && url && (
+          <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy/85 to-transparent p-4 pt-10 text-sm font-semibold text-white">{center.caption}</figcaption>
+        )}
+        {isAdmin && (
+          <button onClick={() => setEditing(true)} className="absolute right-3 top-3 z-10 flex items-center gap-1.5 rounded-full bg-navy px-3.5 py-2 text-xs font-bold text-white shadow-lift transition hover:bg-royal">
+            <ImagePlus className="h-4 w-4" /> {center ? 'Change photo / video' : 'Add photo / video'}
+          </button>
+        )}
+      </figure>
+      <AnimatePresence>
+        {isAdmin && editing && session && (
+          <motion.div className="fixed inset-0 z-[70] grid place-items-end bg-navy/40 p-0 backdrop-blur-sm sm:place-items-center sm:p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setEditing(false)}>
+            <motion.div role="dialog" aria-label="Homepage centre media" onClick={(e) => e.stopPropagation()} initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 40, opacity: 0 }} transition={{ type: 'spring', damping: 26, stiffness: 300 }}
+              className="max-h-[90dvh] w-full overflow-y-auto rounded-t-3xl bg-canvas p-5 sm:max-w-md sm:rounded-3xl">
+              <div className="mb-4 flex items-center justify-between">
+                <p className="font-extrabold text-navy">Homepage centre</p>
+                <button onClick={() => setEditing(false)} aria-label="Close" className="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 bg-white"><X className="h-4 w-4" /></button>
+              </div>
+              <CenterUploader session={session} compact />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   )
 }
 
@@ -173,27 +199,27 @@ function PortalHero() {
   const { profiles } = useContent()
   return (
     <section id="services" aria-label="PoliceFlow home" className="relative scroll-mt-24 overflow-hidden bg-canvas">
-      <div aria-hidden className="absolute inset-x-0 top-0 h-[420px] bg-[radial-gradient(50rem_24rem_at_50%_0%,rgba(29,78,216,.10),transparent_70%)]" />
+      <div aria-hidden className="absolute inset-x-0 top-0 h-[420px] bg-[radial-gradient(50rem_24rem_at_50%_0%,rgba(29,78,216,.07),transparent_70%)]" />
       <div className="relative mx-auto grid max-w-7xl grid-cols-2 gap-3 px-4 py-6 sm:gap-4 sm:px-6 md:grid-cols-[240px_1fr_220px] md:gap-6 md:py-10 lg:grid-cols-[300px_1fr_260px] lg:gap-8 lg:px-8">
         {/* CENTRE – full width on top for mobile, middle column on tablet/desktop */}
-        <div className="col-span-2 flex min-w-0 flex-col md:col-span-1 md:col-start-2 md:row-start-1">
+        <div className="rise rise-1 col-span-2 flex min-w-0 flex-col md:col-span-1 md:col-start-2 md:row-start-1">
           <CenterStage />
           <div className="mt-3 grid grid-cols-3 gap-2 sm:mt-4 sm:gap-3">
             {[['112', t('top.emergency')], ['1091', t('top.women')], ['1930', t('top.cyber')]].map(([n, l]) => (
-              <a key={n} href={`tel:${n}`} className="flex flex-col items-center rounded-2xl border border-slate-200 bg-white px-2 py-2.5 text-center shadow-card transition hover:-translate-y-0.5 hover:border-royal sm:py-3">
-                <span className="flex items-center gap-1.5 text-lg font-extrabold tabular-nums text-navy sm:text-2xl"><Phone className="h-3.5 w-3.5 text-royal sm:h-4 sm:w-4" />{n}</span>
+              <a key={n} href={`tel:${n}`} className="ring-hover flex flex-col items-center rounded-2xl border border-slate-200 bg-white px-2 py-2.5 text-center shadow-card transition hover:-translate-y-0.5 hover:border-royal sm:py-3">
+                <span className="flex items-center gap-1.5 text-lg font-extrabold tabular-nums text-navy sm:text-2xl"><Phone className="ring-icon h-3.5 w-3.5 text-royal sm:h-4 sm:w-4" />{n}</span>
                 <span className="text-[10px] font-semibold text-slate-500 sm:text-xs">{l}</span>
               </a>
             ))}
           </div>
           <div className="mt-2 grid grid-cols-2 gap-2 sm:mt-3 sm:gap-3">
-            <Link to="/book" className="flex items-center justify-center gap-2 rounded-xl bg-royal py-3 text-sm font-bold text-white transition hover:bg-navy sm:py-3.5">{t('hero.book')} <ArrowRight className="h-4 w-4" /></Link>
+            <Link to="/book" className="btn-shine flex items-center justify-center gap-2 rounded-xl bg-royal py-3 text-sm font-bold text-white transition hover:bg-navy sm:py-3.5">{t('hero.book')} <ArrowRight className="h-4 w-4" /></Link>
             <Link to="/track" className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-3 text-sm font-bold text-navy transition hover:border-royal sm:py-3.5"><Search className="h-4 w-4 text-royal" /> {t('hero.track')}</Link>
           </div>
         </div>
 
         {/* LEFT – services, bottom → top */}
-        <div className="min-w-0 md:col-start-1 md:row-start-1">
+        <div className="rise rise-2 min-w-0 md:col-start-1 md:row-start-1">
           <p className="mb-2 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.16em] text-navy-600 sm:mb-3 sm:text-[11px]">
             <span className="pulse-dot" /> {t('svc.eyebrow')}
           </p>
@@ -207,7 +233,7 @@ function PortalHero() {
         </div>
 
         {/* RIGHT – profile posters, bottom → top */}
-        <div className="min-w-0 md:col-start-3 md:row-start-1">
+        <div className="rise rise-3 min-w-0 md:col-start-3 md:row-start-1">
           <p className="mb-2 text-[10px] font-extrabold uppercase tracking-[0.16em] text-navy-600 sm:mb-3 sm:text-[11px]">Profiles</p>
           <VerticalMarquee
             label="Profiles"
@@ -274,11 +300,11 @@ function Journey() {
         <ol ref={ref} className="relative mt-14 grid gap-6 md:grid-cols-4 md:gap-5">
           {/* horizontal line (desktop) */}
           <div aria-hidden className="absolute left-[12.5%] right-[12.5%] top-8 hidden h-[3px] rounded-full bg-slate-200 md:block">
-            <motion.div className="journey-line h-full rounded-full bg-gradient-to-r from-royal via-cyan to-emerald" initial={{ scaleX: reduce ? 1 : 0 }} animate={{ scaleX: inView ? 1 : 0 }} transition={{ duration: 1.8, ease: [0.4, 0, 0.2, 1] }} />
+            <motion.div className="journey-line h-full rounded-full bg-royal" initial={{ scaleX: reduce ? 1 : 0 }} animate={{ scaleX: inView ? 1 : 0 }} transition={{ duration: 1.8, ease: [0.4, 0, 0.2, 1] }} />
           </div>
           {/* vertical line (mobile) */}
           <div aria-hidden className="absolute bottom-8 left-8 top-8 w-[3px] rounded-full bg-slate-200 md:hidden">
-            <motion.div className="h-full w-full origin-top rounded-full bg-gradient-to-b from-royal via-cyan to-emerald" initial={{ scaleY: reduce ? 1 : 0 }} animate={{ scaleY: inView ? 1 : 0 }} transition={{ duration: 1.8, ease: [0.4, 0, 0.2, 1] }} />
+            <motion.div className="h-full w-full origin-top rounded-full bg-royal" initial={{ scaleY: reduce ? 1 : 0 }} animate={{ scaleY: inView ? 1 : 0 }} transition={{ duration: 1.8, ease: [0.4, 0, 0.2, 1] }} />
           </div>
           {STEPS.map((s, i) => (
             <motion.li
@@ -322,8 +348,6 @@ function Helplines() {
   ]
   return (
     <section className="relative overflow-hidden bg-navy py-20 text-white sm:py-24">
-      <div aria-hidden className="absolute -right-40 -top-40 h-[30rem] w-[30rem] rounded-full bg-royal/40 blur-3xl" />
-      <div aria-hidden className="absolute -bottom-40 -left-20 h-[24rem] w-[24rem] rounded-full bg-cyan/20 blur-3xl" />
       <div className="relative mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 lg:grid-cols-[0.8fr_1.2fr] lg:items-center lg:px-8">
         <SectionHead eyebrow="24×7" title={t('help.title')} sub={t('help.sub')} light />
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -356,11 +380,10 @@ function Stations() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <SectionHead eyebrow={t('st.eyebrow')} title="Verification location" />
         <Reveal className="mt-10">
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-navy to-royal p-6 text-white shadow-lift sm:p-10">
-            <div aria-hidden className="absolute -right-10 -top-10 h-56 w-56 rounded-full bg-cyan/25 blur-3xl" />
+          <div className="relative overflow-hidden rounded-3xl bg-navy p-6 text-white shadow-lift sm:p-10">
             <div className="relative grid gap-8 md:grid-cols-[1fr_auto] md:items-center">
               <div>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald/20 px-3 py-1 text-xs font-bold text-emerald-200">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-white">
                   <BadgeCheck className="h-3.5 w-3.5" /> All verifications take place here
                 </span>
                 <h3 className="mt-4 text-2xl font-extrabold sm:text-4xl">{loc.name}</h3>
@@ -393,11 +416,11 @@ function Stations() {
 
 /* ---------------- News carousel ---------------- */
 const CAT_STYLE: Record<NewsCat, { icon: LucideIcon; tone: string }> = {
-  'Cybercrime Alerts': { icon: ShieldAlert, tone: 'from-rose-500 to-orange-400' },
-  'Citizen Information': { icon: ClipboardList, tone: 'from-royal to-cyan' },
-  'Police Initiatives': { icon: CalendarCheck2, tone: 'from-emerald to-teal-400' },
-  'Public Awareness': { icon: Lock, tone: 'from-indigo-500 to-royal' },
-  'Important Announcements': { icon: Bell, tone: 'from-amber-500 to-rose-400' },
+  'Cybercrime Alerts': { icon: ShieldAlert, tone: 'bg-navy' },
+  'Citizen Information': { icon: ClipboardList, tone: 'bg-royal' },
+  'Police Initiatives': { icon: CalendarCheck2, tone: 'bg-navy-700' },
+  'Public Awareness': { icon: Lock, tone: 'bg-royal' },
+  'Important Announcements': { icon: Bell, tone: 'bg-navy' },
 }
 
 function News() {
@@ -426,7 +449,7 @@ function News() {
         {news.map((item, i) => { const n = { ...item, ...CAT_STYLE[item.cat] }; return (
           <Reveal key={n.id} delay={i * 0.06} className="w-[82%] shrink-0 snap-start min-[480px]:w-[60%] md:w-[40%] lg:w-[31%]">
             <article className="group flex h-full flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-card transition duration-300 hover:-translate-y-1 hover:shadow-lift">
-              <div className={`relative h-44 overflow-hidden bg-gradient-to-br ${n.tone}`}>
+              <div className={`relative h-44 overflow-hidden ${n.tone}`}>
                 {n.image ? (
                   <img src={n.image} alt="" className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
                 ) : (
@@ -613,8 +636,8 @@ function CtaBand() {
   const t = useT()
   return (
     <section className="bg-canvas px-4 pb-20 sm:px-6 lg:px-8">
-      <Reveal className="relative mx-auto max-w-7xl overflow-hidden rounded-[2rem] bg-gradient-to-br from-navy-900 via-navy to-royal px-6 py-14 text-center text-white sm:px-12 sm:py-20">
-        <div aria-hidden className="hero-aurora absolute inset-0 opacity-60" />
+      <Reveal className="relative mx-auto max-w-7xl overflow-hidden rounded-[2rem] bg-navy px-6 py-14 text-center text-white sm:px-12 sm:py-20">
+        <div aria-hidden className="cta-sheen absolute inset-0" />
         <h2 className="relative text-3xl font-extrabold tracking-tight sm:text-5xl">{t('cta.title')}</h2>
         <p className="relative mx-auto mt-4 max-w-xl text-slate-200">{t('cta.sub')}</p>
         <div className="relative mt-8 flex flex-col justify-center gap-3 sm:flex-row">

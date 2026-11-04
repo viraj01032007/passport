@@ -159,3 +159,57 @@ body {
 /* ---------- QR scan line ---------- */
 .scanline { animation: scan 2.2s ease-in-out infinite alternate; top: 12px; }
 @keyframes scan { to { top: calc(100% - 14px); } }
+
+/* ---------- Centre frame: rotating blue ring ---------- */
+@property --ring-angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+.center-ring {
+  background: conic-gradient(from var(--ring-angle), #E5E7EB 0deg, #1D4ED8 70deg, #93C5FD 110deg, #E5E7EB 180deg, #E5E7EB 360deg);
+  animation: ring-spin 8s linear infinite;
+  box-shadow: 0 24px 50px -28px rgba(16, 42, 67, .35);
+}
+@keyframes ring-spin { to { --ring-angle: 360deg; } }
+
+/* empty centre: soft moving sheen */
+.center-empty {
+  background:
+    linear-gradient(110deg, transparent 30%, rgba(29, 78, 216, .06) 45%, rgba(147, 197, 253, .18) 50%, rgba(29, 78, 216, .06) 55%, transparent 70%) 0 0 / 250% 100%,
+    radial-gradient(circle at 50% 45%, rgba(29, 78, 216, .06), transparent 60%),
+    #fff;
+  animation: sheen 4.5s ease-in-out infinite;
+}
+@keyframes sheen { from { background-position: 120% 0, 0 0, 0 0; } to { background-position: -120% 0, 0 0, 0 0; } }
+
+/* media fades in once loaded */
+.media-in { animation: media-in .9s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes media-in { from { opacity: 0; transform: scale(1.04); } to { opacity: 1; transform: none; } }
+
+/* staggered entrance for hero columns */
+.rise { animation: rise .8s cubic-bezier(.2,.8,.2,1) both; }
+.rise-1 { animation-delay: .05s; } .rise-2 { animation-delay: .18s; } .rise-3 { animation-delay: .31s; }
+@keyframes rise { from { opacity: 0; transform: translate3d(0, 24px, 0); } to { opacity: 1; transform: none; } }
+
+/* shine sweep on primary buttons */
+.btn-shine { position: relative; overflow: hidden; isolation: isolate; }
+.btn-shine::after {
+  content: ''; position: absolute; inset: 0; z-index: -1;
+  background: linear-gradient(110deg, transparent 35%, rgba(255,255,255,.35) 50%, transparent 65%);
+  transform: translateX(-120%);
+  transition: transform .7s ease;
+}
+.btn-shine:hover::after { transform: translateX(120%); }
+
+/* CTA band: slow light sweep */
+.cta-sheen {
+  background: linear-gradient(115deg, transparent 30%, rgba(147,197,253,.12) 50%, transparent 70%) 0 0 / 250% 100%;
+  animation: sheen 9s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* helpline buttons: icon ring on hover */
+.ring-hover { position: relative; }
+.ring-hover:hover .ring-icon { animation: ring-wiggle .6s ease; }
+@keyframes ring-wiggle { 0%,100% { transform: rotate(0); } 20% { transform: rotate(-14deg); } 40% { transform: rotate(12deg); } 60% { transform: rotate(-8deg); } 80% { transform: rotate(4deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .center-ring, .center-empty, .cta-sheen, .rise, .media-in { animation: none !important; }
+}

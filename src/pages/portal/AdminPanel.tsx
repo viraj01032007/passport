@@ -6,8 +6,9 @@ import {
 import { allAppointments, seedSampleAppointments, serviceName, type Appointment, type Status } from '../../lib/store'
 import { readLog } from '../../lib/audit'
 import { addUser, listUsers, removeUser, setActive, setPassword, type Role, type Session } from '../../lib/auth'
-import { NEWS_CATS, imageToDataUrl, updateContent, useContent, type CenterMedia, type NewsItem, type Profile, type SiteContent } from '../../lib/content'
-import { deleteMedia, putMedia, useMediaUrl } from '../../lib/media'
+import { NEWS_CATS, imageToDataUrl, updateContent, useContent, type NewsItem, type Profile, type SiteContent } from '../../lib/content'
+import { useMediaUrl } from '../../lib/media'
+import CenterUploader from '../../components/CenterUploader'
 import { ApplicantPanel, PortalShell, RequireRole, StatusPill, fmtTime, useStoreTick } from './shared'
 
 type Tab = 'overview' | 'applications' | 'activity' | 'staff' | 'website'
@@ -396,78 +397,21 @@ function ProfileSlots({ session, field, title, hint, onMsg }: { session: Session
   )
 }
 
-function CenterMediaEditor({ session, onMsg }: { session: Session; onMsg: (m: { ok: boolean; text: string }) => void }) {
+function CenterMediaEditor({ session }: { session: Session; onMsg?: unknown }) {
   const { center } = useContent()
   const preview = useMediaUrl(center?.src)
-  const [fit, setFit] = useState<CenterMedia['fit']>(center?.fit ?? 'cover')
-  const [caption, setCaption] = useState(center?.caption ?? '')
-  const [link, setLink] = useState('')
-  const [busy, setBusy] = useState(false)
-
-  const apply = async (next: CenterMedia | null, action: string) => {
-    try {
-      if (center?.src.startsWith('idb:') && center.src !== next?.src) await deleteMedia(center.src.slice(4))
-      updateContent(session, { center: next }, action, 'Homepage centre')
-      onMsg({ ok: true, text: next ? 'Centre media saved.' : 'Centre media removed.' })
-    } catch (e) { onMsg({ ok: false, text: (e as Error).message }) }
-  }
-  const upload = async (f: File | undefined) => {
-    if (!f) return
-    const kind = f.type.startsWith('video/') ? 'video' : f.type.startsWith('image/') ? 'image' : null
-    if (!kind) return onMsg({ ok: false, text: 'Choose a photo (JPG, PNG, WebP) or a video (MP4, WebM).' })
-    if (kind === 'video' && f.size > 60 * 1024 * 1024) return onMsg({ ok: false, text: 'Video is larger than 60 MB. Compress it or use a video link.' })
-    if (kind === 'image' && f.size > 15 * 1024 * 1024) return onMsg({ ok: false, text: 'Photo is larger than 15 MB.' })
-    setBusy(true)
-    try {
-      const key = `center-${Date.now()}`
-      await putMedia(key, f)
-      await apply({ kind, src: `idb:${key}`, fit, caption: caption.trim() || undefined }, kind === 'video' ? 'Uploaded centre video' : 'Uploaded centre photo')
-    } catch (e) { onMsg({ ok: false, text: (e as Error).message }) } finally { setBusy(false) }
-  }
-  const useLink = () => {
-    const u = link.trim()
-    if (!/^https:\/\//.test(u)) return onMsg({ ok: false, text: 'Paste a full https:// link to an image or an MP4/WebM video file.' })
-    const kind = /\.(mp4|webm|mov)(\?|$)/i.test(u) ? 'video' : 'image'
-    apply({ kind, src: u, fit, caption: caption.trim() || undefined }, kind === 'video' ? 'Set centre video link' : 'Set centre photo link')
-    setLink('')
-  }
-
   return (
     <Card title="Homepage centre: photo or video">
-      <div className="grid gap-5 lg:grid-cols-[1fr_1fr]">
+      <div className="grid gap-5 lg:grid-cols-2">
         <div className="relative grid aspect-[4/3] place-items-center overflow-hidden rounded-2xl border border-slate-200 bg-canvas">
           {center && preview ? (
             center.kind === 'video'
-              ? <video src={preview} className={`h-full w-full ${center.fit === 'cover' ? 'object-cover' : 'object-contain'}`} autoPlay muted loop playsInline />
+              ? <video key={preview} src={preview} className={`h-full w-full ${center.fit === 'cover' ? 'object-cover' : 'object-contain'}`} autoPlay muted loop playsInline />
               : <img src={preview} alt="" className={`h-full w-full ${center.fit === 'cover' ? 'object-cover' : 'object-contain p-4'}`} />
-          ) : <p className="text-sm font-semibold text-slate-400">Empty: the homepage shows a blank frame</p>}
+          ) : <p className="px-6 text-center text-sm font-semibold text-slate-400">Empty: the homepage shows a blank frame</p>}
+          <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold text-navy shadow-sm">Live preview</span>
         </div>
-        <div className="space-y-3">
-          <label className={`flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-navy py-3 font-bold text-white hover:bg-royal ${busy ? 'pointer-events-none opacity-60' : ''}`}>
-            <ImagePlus className="h-4 w-4" /> {busy ? 'Saving…' : 'Upload photo or video'}
-            <input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; upload(f) }} />
-          </label>
-          <div className="flex gap-2">
-            <input value={link} onChange={(e) => setLink(e.target.value)} placeholder="…or paste an https:// image or .mp4 link" className="min-w-0 flex-1 rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-royal" />
-            <button onClick={useLink} className="rounded-xl border border-slate-200 px-4 text-sm font-bold text-navy hover:border-royal">Use</button>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <label className="block text-sm font-bold text-navy">Display
-              <select value={fit} onChange={(e) => setFit(e.target.value as CenterMedia['fit'])} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2.5 text-sm font-semibold">
-                <option value="cover">Fill the frame</option>
-                <option value="contain">Show whole (logo, poster)</option>
-              </select>
-            </label>
-            <label className="block text-sm font-bold text-navy">Caption (optional)
-              <input value={caption} onChange={(e) => setCaption(e.target.value)} maxLength={120} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-normal" />
-            </label>
-          </div>
-          <div className="flex gap-2">
-            <button disabled={!center} onClick={() => center && apply({ ...center, fit, caption: caption.trim() || undefined }, 'Updated centre display')} className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 py-2.5 text-sm font-bold text-navy hover:border-royal disabled:opacity-40"><Save className="h-4 w-4" /> Save display & caption</button>
-            {center && <button onClick={() => apply(null, 'Removed centre media')} className="flex items-center gap-2 rounded-xl border border-rose-200 px-4 text-sm font-bold text-rose-600 hover:bg-rose-50"><Trash2 className="h-4 w-4" /> Remove</button>}
-          </div>
-          <p className="text-xs text-slate-500">Videos play muted and loop. Use only photos and videos you have the rights to.</p>
-        </div>
+        <CenterUploader session={session} />
       </div>
     </Card>
   )

@@ -7,7 +7,7 @@ export default {
         ink: '#334155',
         navy: { DEFAULT: '#102A43', 900: '#0B1F33', 800: '#102A43', 700: '#1E3A5F', 600: '#334E68' },
         royal: '#1D4ED8',
-        cyan: { DEFAULT: '#38BDF8' },
+        cyan: { DEFAULT: '#93C5FD' },
         emerald: { DEFAULT: '#10B981' },
         canvas: '#F8FAFC',
       },
