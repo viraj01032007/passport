@@ -14,6 +14,7 @@ import VerticalMarquee from '../components/VerticalMarquee'
 import { pick, useLang, useT, type Lang } from '../lib/i18n'
 import { STATIONS } from '../lib/store'
 import { useContent, type NewsCat, type Profile } from '../lib/content'
+import { useMediaUrl } from '../lib/media'
 
 type L3 = { en: string; mr: string; hi: string }
 
@@ -34,6 +35,7 @@ export default function Home() {
     <>
       <Notice />
       <PortalHero />
+      <GuidedBy />
 
       <section aria-label="Values" className="bg-navy py-4 sm:py-5">
         <Marquee
@@ -92,23 +94,23 @@ const SERVICES: Svc[] = [
   { icon: Search, to: '/track', t: { en: 'Application Tracking', mr: 'अर्जाचा मागोवा', hi: 'आवेदन ट्रैकिंग' }, d: { en: 'Check status, view your pass or cancel.', mr: 'स्थिती तपासा, पास पहा किंवा रद्द करा.', hi: 'स्थिति देखें, पास देखें या रद्द करें.' } },
 ]
 
-function ServiceCard({ s, hidden = false, compact = false }: { s: Svc; hidden?: boolean; compact?: boolean }) {
+function ServiceCard({ s, hidden = false, compact = false, mini = false }: { s: Svc; hidden?: boolean; compact?: boolean; mini?: boolean }) {
   const t = useT()
   const { lang } = useLang()
-  const cls = `group flex h-full gap-4 rounded-2xl border border-slate-200 bg-white shadow-card transition duration-300 hover:-translate-y-1 hover:border-royal/30 hover:shadow-lift ${compact ? 'flex-col p-4' : 'items-start p-4 sm:p-5'}`
+  const cls = `group flex h-full rounded-2xl border border-slate-200 bg-white shadow-card transition duration-300 hover:-translate-y-1 hover:border-royal/30 hover:shadow-lift ${compact ? 'flex-col gap-4 p-4' : mini ? 'flex-col gap-2 p-3 sm:p-4 md:flex-row md:items-start md:gap-4 md:p-4 lg:p-5' : 'items-start gap-4 p-4 sm:p-5'}`
   const inner = (
     <>
-      <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl transition-colors duration-300 ${s.external ? 'bg-slate-100 text-navy group-hover:bg-navy group-hover:text-white' : 'bg-royal/10 text-royal group-hover:bg-royal group-hover:text-white'}`}>
+      <span className={`grid shrink-0 place-items-center rounded-xl transition-colors ${mini ? 'h-9 w-9 md:h-11 md:w-11' : 'h-11 w-11'} duration-300 ${s.external ? 'bg-slate-100 text-navy group-hover:bg-navy group-hover:text-white' : 'bg-royal/10 text-royal group-hover:bg-royal group-hover:text-white'}`}>
         <s.icon className="h-5 w-5" />
       </span>
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="flex items-start justify-between gap-2">
-          <span className="text-[15px] font-extrabold leading-snug text-navy">{pick(lang, s.t)}</span>
+          <span className={`font-extrabold leading-snug text-navy ${mini ? 'text-[13px] sm:text-sm md:text-[15px]' : 'text-[15px]'}`}>{pick(lang, s.t)}</span>
           {s.external
             ? <ExternalLink className="mt-0.5 h-4 w-4 shrink-0 text-slate-400 transition group-hover:text-navy" />
             : <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-royal transition-transform duration-300 group-hover:translate-x-1" />}
         </span>
-        <span className="mt-1 text-[13px] leading-relaxed text-ink">{pick(lang, s.d)}</span>
+        <span className={`mt-1 leading-relaxed text-ink ${mini ? 'line-clamp-3 text-[11px] sm:text-xs md:text-[13px]' : 'text-[13px]'}`}>{pick(lang, s.d)}</span>
         <span className={`mt-2.5 w-fit rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${s.external ? 'bg-slate-100 text-slate-600' : 'bg-royal/10 text-royal'}`}>
           {s.external ? t('svc.official') : t('svc.pf')}
         </span>
@@ -134,11 +136,33 @@ function ProfileCard({ p, hidden = false }: { p: Profile; hidden?: boolean }) {
         </div>
       )}
       {!empty && (
-        <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy-900/95 via-navy-900/70 to-transparent p-4 pt-12 text-white">
-          <p className="font-extrabold leading-tight">{p.name}</p>
+        <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy-900/95 via-navy-900/70 to-transparent p-3 pt-10 text-white sm:p-4 sm:pt-12">
+          <p className="text-sm font-extrabold leading-tight sm:text-base">{p.name}</p>
           {p.role && <p className="mt-0.5 text-xs font-semibold text-cyan">{p.role}</p>}
           {p.dept && <p className="text-[11px] text-slate-300">{p.dept}</p>}
         </figcaption>
+      )}
+    </figure>
+  )
+}
+
+function CenterStage() {
+  const { center } = useContent()
+  const url = useMediaUrl(center?.src)
+  const fit = center?.fit === 'cover' ? 'object-cover' : 'object-contain'
+  return (
+    <figure className="relative grid aspect-[4/3] w-full place-items-center overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-card md:aspect-auto md:min-h-[480px] md:flex-1">
+      {center && url ? (
+        center.kind === 'video' ? (
+          <video src={url} className={`absolute inset-0 h-full w-full ${fit}`} autoPlay muted loop playsInline aria-label={center.caption || 'Featured video'} />
+        ) : (
+          <img src={url} alt={center.caption || 'Featured image'} className={`absolute inset-0 h-full w-full ${fit} ${center.fit === 'contain' ? 'p-6' : ''}`} />
+        )
+      ) : (
+        <div aria-hidden className="absolute inset-3 rounded-2xl border-2 border-dashed border-slate-200" />
+      )}
+      {center?.caption && url && (
+        <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy-900/85 to-transparent p-4 pt-10 text-sm font-semibold text-white">{center.caption}</figcaption>
       )}
     </figure>
   )
@@ -150,58 +174,80 @@ function PortalHero() {
   return (
     <section id="services" aria-label="PoliceFlow home" className="relative scroll-mt-24 overflow-hidden bg-canvas">
       <div aria-hidden className="absolute inset-x-0 top-0 h-[420px] bg-[radial-gradient(50rem_24rem_at_50%_0%,rgba(29,78,216,.10),transparent_70%)]" />
-      <div className="relative mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:px-6 md:grid-cols-[240px_1fr_220px] md:py-10 lg:grid-cols-[300px_1fr_260px] lg:gap-8 lg:px-8">
+      <div className="relative mx-auto grid max-w-7xl grid-cols-2 gap-3 px-4 py-6 sm:gap-4 sm:px-6 md:grid-cols-[240px_1fr_220px] md:gap-6 md:py-10 lg:grid-cols-[300px_1fr_260px] lg:gap-8 lg:px-8">
+        {/* CENTRE – full width on top for mobile, middle column on tablet/desktop */}
+        <div className="col-span-2 flex min-w-0 flex-col md:col-span-1 md:col-start-2 md:row-start-1">
+          <CenterStage />
+          <div className="mt-3 grid grid-cols-3 gap-2 sm:mt-4 sm:gap-3">
+            {[['112', t('top.emergency')], ['1091', t('top.women')], ['1930', t('top.cyber')]].map(([n, l]) => (
+              <a key={n} href={`tel:${n}`} className="flex flex-col items-center rounded-2xl border border-slate-200 bg-white px-2 py-2.5 text-center shadow-card transition hover:-translate-y-0.5 hover:border-royal sm:py-3">
+                <span className="flex items-center gap-1.5 text-lg font-extrabold tabular-nums text-navy sm:text-2xl"><Phone className="h-3.5 w-3.5 text-royal sm:h-4 sm:w-4" />{n}</span>
+                <span className="text-[10px] font-semibold text-slate-500 sm:text-xs">{l}</span>
+              </a>
+            ))}
+          </div>
+          <div className="mt-2 grid grid-cols-2 gap-2 sm:mt-3 sm:gap-3">
+            <Link to="/book" className="flex items-center justify-center gap-2 rounded-xl bg-royal py-3 text-sm font-bold text-white transition hover:bg-navy sm:py-3.5">{t('hero.book')} <ArrowRight className="h-4 w-4" /></Link>
+            <Link to="/track" className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-3 text-sm font-bold text-navy transition hover:border-royal sm:py-3.5"><Search className="h-4 w-4 text-royal" /> {t('hero.track')}</Link>
+          </div>
+        </div>
+
         {/* LEFT – services, bottom → top */}
-        <div className="order-2 min-w-0 md:order-1">
-          <p className="mb-3 flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.2em] text-navy-600">
+        <div className="min-w-0 md:col-start-1 md:row-start-1">
+          <p className="mb-2 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.16em] text-navy-600 sm:mb-3 sm:text-[11px]">
             <span className="pulse-dot" /> {t('svc.eyebrow')}
           </p>
           <VerticalMarquee
             label={t('svc.eyebrow')}
             duration={32}
             gap="0.75rem"
-            className="hidden h-[620px] md:flex"
-            render={(hidden) => SERVICES.map((s) => <ServiceCard key={s.t.en} s={s} hidden={hidden} />)}
+            className="h-[380px] sm:h-[460px] md:h-[620px]"
+            render={(hidden) => SERVICES.map((s) => <ServiceCard key={s.t.en} s={s} hidden={hidden} mini />)}
           />
-          <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 md:hidden" role="region" aria-label={t('svc.eyebrow')}>
-            {SERVICES.map((s) => (
-              <div key={s.t.en} className="w-[72%] shrink-0 snap-start min-[480px]:w-[46%]"><ServiceCard s={s} compact /></div>
-            ))}
-          </div>
-        </div>
-
-        {/* CENTRE – reserved, stays still */}
-        <div className="order-1 flex min-w-0 flex-col md:order-2">
-          <div className="grid min-h-[260px] flex-1 place-items-center rounded-3xl border-2 border-dashed border-slate-300 bg-white/60 md:min-h-[480px]" aria-hidden />
-          <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
-            {[['112', t('top.emergency')], ['1091', t('top.women')], ['1930', t('top.cyber')]].map(([n, l]) => (
-              <a key={n} href={`tel:${n}`} className="flex flex-col items-center rounded-2xl border border-slate-200 bg-white px-2 py-3 text-center shadow-card transition hover:-translate-y-0.5 hover:border-royal">
-                <span className="flex items-center gap-1.5 text-xl font-extrabold tabular-nums text-navy sm:text-2xl"><Phone className="h-4 w-4 text-royal" />{n}</span>
-                <span className="text-[11px] font-semibold text-slate-500 sm:text-xs">{l}</span>
-              </a>
-            ))}
-          </div>
-          <div className="mt-3 grid grid-cols-2 gap-2 sm:gap-3">
-            <Link to="/book" className="flex items-center justify-center gap-2 rounded-xl bg-royal py-3.5 text-sm font-bold text-white transition hover:bg-navy">{t('hero.book')} <ArrowRight className="h-4 w-4" /></Link>
-            <Link to="/track" className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-3.5 text-sm font-bold text-navy transition hover:border-royal"><Search className="h-4 w-4 text-royal" /> {t('hero.track')}</Link>
-          </div>
         </div>
 
         {/* RIGHT – profile posters, bottom → top */}
-        <div className="order-3 min-w-0">
+        <div className="min-w-0 md:col-start-3 md:row-start-1">
+          <p className="mb-2 text-[10px] font-extrabold uppercase tracking-[0.16em] text-navy-600 sm:mb-3 sm:text-[11px]">Profiles</p>
           <VerticalMarquee
             label="Profiles"
             duration={40}
             gap="0.75rem"
-            className="hidden h-[620px] md:flex md:mt-[30px]"
+            className="h-[380px] sm:h-[460px] md:h-[620px]"
             render={(hidden) => profiles.map((p) => <ProfileCard key={p.id} p={p} hidden={hidden} />)}
           />
-          <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 md:hidden" role="region" aria-label="Profiles">
-            {profiles.map((p) => (
-              <div key={p.id} className="w-[42%] shrink-0 snap-start min-[480px]:w-[30%]"><ProfileCard p={p} /></div>
-            ))}
-          </div>
         </div>
+      </div>
+    </section>
+  )
+}
+
+/* ---------------- Guided by ---------------- */
+function GuidedBy() {
+  const { guides } = useContent()
+  return (
+    <section aria-labelledby="guided-by" className="border-y border-slate-200 bg-white py-14 sm:py-20">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <Reveal className="text-center">
+          <p className="flex items-center justify-center gap-2 text-xs font-extrabold uppercase tracking-[0.22em] text-royal"><span className="h-px w-6 bg-current" /> Guidance <span className="h-px w-6 bg-current" /></p>
+          <h2 id="guided-by" className="mt-3 text-3xl font-extrabold tracking-tight text-navy sm:text-4xl">Guided by</h2>
+        </Reveal>
+        <ul className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5 lg:grid-cols-6">
+          {guides.map((g, i) => (
+            <Reveal key={g.id} delay={(i % 6) * 0.05}>
+              <li className="group text-center">
+                <div className="relative mx-auto aspect-square w-full max-w-[180px] overflow-hidden rounded-full border-4 border-white bg-slate-100 shadow-card ring-1 ring-slate-200 transition duration-300 group-hover:-translate-y-1 group-hover:shadow-lift">
+                  {g.image ? <img src={g.image} alt={g.name || 'Profile photo'} className="h-full w-full object-cover" /> : (
+                    <div className="grid h-full place-items-center"><UserRound className="h-12 w-12 text-slate-300" strokeWidth={1.2} /></div>
+                  )}
+                </div>
+                <p className="mt-3 min-h-[1.25rem] text-sm font-extrabold text-navy sm:text-base">{g.name}</p>
+                <p className="text-xs font-semibold text-royal">{g.role}</p>
+                {g.dept && <p className="text-[11px] text-slate-500">{g.dept}</p>}
+              </li>
+            </Reveal>
+          ))}
+        </ul>
       </div>
     </section>
   )

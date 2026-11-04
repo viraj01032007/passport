@@ -10,9 +10,13 @@ export const NEWS_CATS: NewsCat[] = ['Cybercrime Alerts', 'Citizen Information',
 
 export type Profile = { id: string; name: string; role: string; dept: string; image?: string }
 
+export type CenterMedia = { kind: 'image' | 'video'; src: string; fit: 'contain' | 'cover'; caption?: string }
+
 export type SiteContent = {
   notice: string
   profiles: Profile[]
+  guides: Profile[]
+  center: CenterMedia | null
   heroImages: (string | null)[] // data URLs; null = designed backdrop
   news: NewsItem[]
 }
@@ -20,6 +24,8 @@ export type SiteContent = {
 export const DEFAULT_CONTENT: SiteContent = {
   notice: '',
   profiles: Array.from({ length: 6 }, (_, i) => ({ id: `p${i + 1}`, name: '', role: '', dept: '' })),
+  guides: Array.from({ length: 6 }, (_, i) => ({ id: `g${i + 1}`, name: '', role: '', dept: '' })),
+  center: null,
   heroImages: [null, null, null],
   news: [
     { id: 'n1', cat: 'Cybercrime Alerts', date: '2026-10-28', title: 'Fake “KYC update” messages are rising', text: 'Banks never ask for OTPs or PINs. If you lose money, call 1930 within the first hour.' },

@@ -6,7 +6,8 @@ import {
 import { allAppointments, seedSampleAppointments, serviceName, type Appointment, type Status } from '../../lib/store'
 import { readLog } from '../../lib/audit'
 import { addUser, listUsers, removeUser, setActive, setPassword, type Role, type Session } from '../../lib/auth'
-import { NEWS_CATS, imageToDataUrl, updateContent, useContent, type NewsItem, type Profile } from '../../lib/content'
+import { NEWS_CATS, imageToDataUrl, updateContent, useContent, type CenterMedia, type NewsItem, type Profile, type SiteContent } from '../../lib/content'
+import { deleteMedia, putMedia, useMediaUrl } from '../../lib/media'
 import { ApplicantPanel, PortalShell, RequireRole, StatusPill, fmtTime, useStoreTick } from './shared'
 
 type Tab = 'overview' | 'applications' | 'activity' | 'staff' | 'website'
@@ -169,7 +170,7 @@ function ActivityLog() {
     (kind === 'all' ||
       (kind === 'decisions' && /Accepted|Declined|Marked|Request/.test(l.action)) ||
       (kind === 'signin' && /Sign|login/i.test(l.action)) ||
-      (kind === 'website' && /photo|notice|news|profile/i.test(l.action))))
+      (kind === 'website' && /photo|notice|news|profile|guided|centre/i.test(l.action))))
 
   const exportCsv = () => {
     const rows = [['Time', 'Username', 'Name', 'Role', 'Action', 'Target', 'Note'], ...list.map((l) => [new Date(l.at).toISOString(), l.by, l.name, l.role, l.action, l.target ?? '', l.note ?? ''])]
@@ -314,20 +315,9 @@ function Website({ session }: { session: Session }) {
         </div>
       </Card>
 
-      <Card title="Right-column profile cards">
-        <p className="mb-4 text-sm text-ink">These scroll on the right of the homepage. Empty slots show a blank frame. Only add people and photos the department has authorised.</p>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {content.profiles.map((p, i) => (
-            <ProfileEditor key={p.id} index={i} p={p} onSave={(next, action) => run(() => updateContent(session, { profiles: content.profiles.map((x) => (x.id === p.id ? next : x)) }, action, `Profile slot ${i + 1}`), `Profile slot ${i + 1} saved.`)} onError={(text) => setMsg({ ok: false, text })} />
-          ))}
-        </div>
-        <div className="mt-4 flex gap-2">
-          <button onClick={() => run(() => updateContent(session, { profiles: [...content.profiles, { id: crypto.randomUUID(), name: '', role: '', dept: '' }] }, 'Added profile slot'), 'Slot added.')} className="flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-navy hover:border-royal"><Plus className="h-4 w-4" /> Add slot</button>
-          {content.profiles.length > 3 && (
-            <button onClick={() => run(() => updateContent(session, { profiles: content.profiles.slice(0, -1) }, 'Removed profile slot'), 'Last slot removed.')} className="flex items-center gap-2 rounded-xl border border-rose-200 px-4 py-2.5 text-sm font-bold text-rose-600 hover:bg-rose-50"><Trash2 className="h-4 w-4" /> Remove last slot</button>
-          )}
-        </div>
-      </Card>
+      <CenterMediaEditor session={session} onMsg={setMsg} />
+      <ProfileSlots session={session} field="guides" title="“Guided by” section (below the hero)" hint="Six round photos with name and designation. Only add people and photos the department has authorised." onMsg={setMsg} />
+      <ProfileSlots session={session} field="profiles" title="Right-column profile cards" hint="These scroll on the right of the homepage. Empty slots show a blank frame." onMsg={setMsg} />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
         <Card title={`News & updates (${content.news.length})`}>
@@ -377,6 +367,109 @@ function Website({ session }: { session: Session }) {
         </Card>
       </div>
     </div>
+  )
+}
+
+function ProfileSlots({ session, field, title, hint, onMsg }: { session: Session; field: 'profiles' | 'guides'; title: string; hint: string; onMsg: (m: { ok: boolean; text: string }) => void }) {
+  const content = useContent()
+  const list = content[field]
+  const label = field === 'guides' ? 'Guided-by slot' : 'Profile slot'
+  const patch = (v: Profile[]): Partial<SiteContent> => (field === 'guides' ? { guides: v } : { profiles: v })
+  const run = (fn: () => void, ok: string) => { try { fn(); onMsg({ ok: true, text: ok }) } catch (e) { onMsg({ ok: false, text: (e as Error).message }) } }
+  return (
+    <Card title={title}>
+      <p className="mb-4 text-sm text-ink">{hint}</p>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {list.map((p, i) => (
+          <ProfileEditor key={p.id} index={i} p={p}
+            onSave={(next, action) => run(() => updateContent(session, patch(list.map((x) => (x.id === p.id ? next : x))), action, `${label} ${i + 1}`), `${label} ${i + 1} saved.`)}
+            onError={(text) => onMsg({ ok: false, text })} />
+        ))}
+      </div>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <button onClick={() => run(() => updateContent(session, patch([...list, { id: crypto.randomUUID(), name: '', role: '', dept: '' }]), `Added ${label.toLowerCase()}`), 'Slot added.')} className="flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-navy hover:border-royal"><Plus className="h-4 w-4" /> Add slot</button>
+        {list.length > 1 && (
+          <button onClick={() => run(() => updateContent(session, patch(list.slice(0, -1)), `Removed ${label.toLowerCase()}`), 'Last slot removed.')} className="flex items-center gap-2 rounded-xl border border-rose-200 px-4 py-2.5 text-sm font-bold text-rose-600 hover:bg-rose-50"><Trash2 className="h-4 w-4" /> Remove last slot</button>
+        )}
+      </div>
+    </Card>
+  )
+}
+
+function CenterMediaEditor({ session, onMsg }: { session: Session; onMsg: (m: { ok: boolean; text: string }) => void }) {
+  const { center } = useContent()
+  const preview = useMediaUrl(center?.src)
+  const [fit, setFit] = useState<CenterMedia['fit']>(center?.fit ?? 'cover')
+  const [caption, setCaption] = useState(center?.caption ?? '')
+  const [link, setLink] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  const apply = async (next: CenterMedia | null, action: string) => {
+    try {
+      if (center?.src.startsWith('idb:') && center.src !== next?.src) await deleteMedia(center.src.slice(4))
+      updateContent(session, { center: next }, action, 'Homepage centre')
+      onMsg({ ok: true, text: next ? 'Centre media saved.' : 'Centre media removed.' })
+    } catch (e) { onMsg({ ok: false, text: (e as Error).message }) }
+  }
+  const upload = async (f: File | undefined) => {
+    if (!f) return
+    const kind = f.type.startsWith('video/') ? 'video' : f.type.startsWith('image/') ? 'image' : null
+    if (!kind) return onMsg({ ok: false, text: 'Choose a photo (JPG, PNG, WebP) or a video (MP4, WebM).' })
+    if (kind === 'video' && f.size > 60 * 1024 * 1024) return onMsg({ ok: false, text: 'Video is larger than 60 MB. Compress it or use a video link.' })
+    if (kind === 'image' && f.size > 15 * 1024 * 1024) return onMsg({ ok: false, text: 'Photo is larger than 15 MB.' })
+    setBusy(true)
+    try {
+      const key = `center-${Date.now()}`
+      await putMedia(key, f)
+      await apply({ kind, src: `idb:${key}`, fit, caption: caption.trim() || undefined }, kind === 'video' ? 'Uploaded centre video' : 'Uploaded centre photo')
+    } catch (e) { onMsg({ ok: false, text: (e as Error).message }) } finally { setBusy(false) }
+  }
+  const useLink = () => {
+    const u = link.trim()
+    if (!/^https:\/\//.test(u)) return onMsg({ ok: false, text: 'Paste a full https:// link to an image or an MP4/WebM video file.' })
+    const kind = /\.(mp4|webm|mov)(\?|$)/i.test(u) ? 'video' : 'image'
+    apply({ kind, src: u, fit, caption: caption.trim() || undefined }, kind === 'video' ? 'Set centre video link' : 'Set centre photo link')
+    setLink('')
+  }
+
+  return (
+    <Card title="Homepage centre: photo or video">
+      <div className="grid gap-5 lg:grid-cols-[1fr_1fr]">
+        <div className="relative grid aspect-[4/3] place-items-center overflow-hidden rounded-2xl border border-slate-200 bg-canvas">
+          {center && preview ? (
+            center.kind === 'video'
+              ? <video src={preview} className={`h-full w-full ${center.fit === 'cover' ? 'object-cover' : 'object-contain'}`} autoPlay muted loop playsInline />
+              : <img src={preview} alt="" className={`h-full w-full ${center.fit === 'cover' ? 'object-cover' : 'object-contain p-4'}`} />
+          ) : <p className="text-sm font-semibold text-slate-400">Empty: the homepage shows a blank frame</p>}
+        </div>
+        <div className="space-y-3">
+          <label className={`flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-navy py-3 font-bold text-white hover:bg-royal ${busy ? 'pointer-events-none opacity-60' : ''}`}>
+            <ImagePlus className="h-4 w-4" /> {busy ? 'Saving…' : 'Upload photo or video'}
+            <input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; upload(f) }} />
+          </label>
+          <div className="flex gap-2">
+            <input value={link} onChange={(e) => setLink(e.target.value)} placeholder="…or paste an https:// image or .mp4 link" className="min-w-0 flex-1 rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-royal" />
+            <button onClick={useLink} className="rounded-xl border border-slate-200 px-4 text-sm font-bold text-navy hover:border-royal">Use</button>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block text-sm font-bold text-navy">Display
+              <select value={fit} onChange={(e) => setFit(e.target.value as CenterMedia['fit'])} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2 py-2.5 text-sm font-semibold">
+                <option value="cover">Fill the frame</option>
+                <option value="contain">Show whole (logo, poster)</option>
+              </select>
+            </label>
+            <label className="block text-sm font-bold text-navy">Caption (optional)
+              <input value={caption} onChange={(e) => setCaption(e.target.value)} maxLength={120} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-normal" />
+            </label>
+          </div>
+          <div className="flex gap-2">
+            <button disabled={!center} onClick={() => center && apply({ ...center, fit, caption: caption.trim() || undefined }, 'Updated centre display')} className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 py-2.5 text-sm font-bold text-navy hover:border-royal disabled:opacity-40"><Save className="h-4 w-4" /> Save display & caption</button>
+            {center && <button onClick={() => apply(null, 'Removed centre media')} className="flex items-center gap-2 rounded-xl border border-rose-200 px-4 text-sm font-bold text-rose-600 hover:bg-rose-50"><Trash2 className="h-4 w-4" /> Remove</button>}
+          </div>
+          <p className="text-xs text-slate-500">Videos play muted and loop. Use only photos and videos you have the rights to.</p>
+        </div>
+      </div>
+    </Card>
   )
 }
 
